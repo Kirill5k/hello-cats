@@ -82,7 +82,7 @@ object Functors extends App {
   implicit val intCodec: Codec[Int] = stringCodec.imap(_.toInt, _.toString)
   implicit val booleanCodec: Codec[Boolean] = stringCodec.imap(_.toBoolean, _.toString)
   implicit val doubleCodec: Codec[Double] = stringCodec.imap(_.toDouble, _.toString)
-  implicit def boxCodec[A](implicit c: Codec[A]): Codec[Box[A]] = stringCodec.imap(c.decode, c.encode)
+  implicit def boxCodec[A](implicit c: Codec[A]): Codec[Box[A]] = stringCodec.imap(str => Box(c.decode(str)), b => c.encode(b.value))
 
   import cats.Contravariant
   import cats.Show
