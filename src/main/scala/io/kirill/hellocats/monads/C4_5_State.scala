@@ -3,6 +3,7 @@ package io.kirill.hellocats.monads
 object C4_5_State extends App {
 
   import cats.data.State
+  import cats.syntax.applicative._
 
   val a = State[Int, String] { state =>
     (state, s"the state is $state")
@@ -45,8 +46,6 @@ object C4_5_State extends App {
 
   import State._
 
-
-
   val program: State[Int, (Int, Int, Int)] = for {
     a <- get[Int]
     _ <- set[Int](a + 1)
@@ -54,4 +53,35 @@ object C4_5_State extends App {
     _ <- modify[Int](_ + 1)
     c <- inspect[Int, Int](_ * 1000)
   } yield (a, b, c)
+
+
+  type CalcState[A] = State[List[Int], A]
+
+  def evalOne(sym: String): CalcState[Int] = sym match {
+    case "+" => operator(_ + _)
+    case "-" => operator(_ - _)
+    case "*" => operator(_ * _)
+    case "/" => operator(_ / _)
+    case num => operand(num.toInt)
+  }
+
+  def operator(func: (Int, Int) => Int): CalcState[Int] = State[List[Int], Int] {
+    case b :: a :: tail =>
+      val ans = func(a, b)
+      (ans :: tail, ans)
+    case _ => sys.error("fail")
+  }
+
+  def operand(num: Int): CalcState[Int] = State[List[Int], Int] { stack => (num :: stack, -1)}
+
+  val calculationResult = for {
+    _ <- evalOne("1")
+    _ <- evalOne("2")
+    ans <- evalOne("+")
+  } yield ans
+  println(calculationResult.runA(Nil).value)
+
+  def evalAll(input: List[String]): CalcState[Int] = input.foldLeft(0.pure[CalcState])((acc, sym) => acc.flatMap(_ => evalOne(sym)))
+
+  println(evalAll(List("1", "2", "+", "39", "+")).runA(Nil).value)
 }

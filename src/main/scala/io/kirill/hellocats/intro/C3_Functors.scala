@@ -1,5 +1,7 @@
 package io.kirill.hellocats.intro
 
+import io.kirill.hellocats.utils.{Branch, Leaf, Tree}
+
 trait MyFunctor[F[_]] {
   def map[A, B](fa: F[A])(f: A => B): F[B]
 }
@@ -30,10 +32,6 @@ object Functors extends App {
   implicit val optionFunctor: Functor[Option] = new Functor[Option] {
     override def map[A, B](fa: Option[A])(f: A => B): Option[B] = fa.map(f)
   }
-
-  sealed trait Tree[+A]
-  final case class Branch[A](left: Tree[A], right: Tree[A]) extends Tree[A]
-  final case class Leaf[A](value: A) extends Tree[A]
 
   implicit val treeFunctor: Functor[Tree] = new Functor[Tree] {
     override def map[A, B](fa: Tree[A])(f: A => B): Tree[B] = fa match {
