@@ -42,7 +42,7 @@ object C6_1_Semigroups extends App {
 
   println(garfield |+| heathcliff)
 
-  def product[M[_]: Monad, A, B](x: M[A], y: M[A]): M[(A, B)] = {
+  def product[M[_]: Monad, A, B](x: M[A], y: M[B]): M[(A, B)] = {
     for {
       a <- x
       b <- y
