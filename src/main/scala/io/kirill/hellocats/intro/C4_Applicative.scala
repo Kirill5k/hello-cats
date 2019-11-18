@@ -20,4 +20,6 @@ object C4_Applicative extends App {
   println(Apply[Option].tuple2(Some("Donald"), Some("Trump")))
   println(Apply[Option].map2(Some("Donald"), Some("Trump"))(Person.apply))
 
+  println(("Donald".some, "Trump".some).mapN(Person.apply))
+  println(("Donald".asRight[Int], "Trump".asRight[Int]).mapN(Person.apply))
 }

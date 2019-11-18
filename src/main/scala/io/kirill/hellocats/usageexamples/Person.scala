@@ -1,8 +1,7 @@
 package io.kirill.hellocats.usageexamples
 
 import scala.util.Try
-import cats.syntax.either._
-import cats.Semigroupal
+import cats.implicits._
 
 
 case class TransformError(message: String)
@@ -27,14 +26,7 @@ object PhoneNumber {
   private def parseInt(s: String): Either[TransformError, Int] = Try(s.toInt).toEither.leftMap(e => TransformError(e.getMessage))
 
   def fromPhoneString(phoneString: String): Either[TransformError, PhoneNumber] = phoneString match {
-    case pattern(code, area, prefix, line) =>
-      for {
-        c <- parseInt(code)
-        a <- parseInt(area)
-        p <- parseInt(prefix)
-        l <- parseInt(line)
-      } yield PhoneNumber(c, a, p, l)
-
+    case pattern(code, area, prefix, line) => (parseInt(code), parseInt(area), parseInt(prefix), parseInt(line)).mapN(PhoneNumber.apply)
     case _ => TransformError("phone string did not match the expected pattern").asLeft[PhoneNumber]
   }
 }
