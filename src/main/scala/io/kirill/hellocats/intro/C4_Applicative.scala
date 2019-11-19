@@ -1,5 +1,19 @@
 package io.kirill.hellocats.intro
 
+
+trait Apply[F[_]] {
+  def ap[A, B](f: F[A => B])(fa: F[A]): F[B]
+  def map[A, B](fa: F[A])(f: A => B): F[B]
+}
+
+object ApplyOps {
+  implicit val optionApply: Apply[Option] = new Apply[Option] {
+    override def ap[A, B](f: Option[A => B])(fa: Option[A]): Option[B] = fa.flatMap(a => f.map(ff => ff(a)))
+
+    override def map[A, B](fa: Option[A])(f: A => B): Option[B] = fa map f
+  }
+}
+
 object C4_Applicative extends App {
 
   import cats.Apply
