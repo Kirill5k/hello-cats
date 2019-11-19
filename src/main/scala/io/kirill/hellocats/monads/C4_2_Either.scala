@@ -31,4 +31,25 @@ object C4_2_Either extends App {
     c <- if (b==0) "DIV0".asLeft[Int] else (a/b).asRight[String]
   } yield c * 100
   println(result)
+
+  sealed trait LoginError extends Product with Serializable
+  final case class UserNotFound(username: String) extends LoginError
+  final case class PasswordIncorrect(username: String) extends LoginError
+  case object UnexpectedError extends LoginError
+
+  case class User(username: String, password: String)
+
+  type LoginResult = Either[LoginError, User]
+
+  def handleError(error: LoginError): Unit = error match {
+    case UserNotFound(u) => println(s"user $u not found")
+    case PasswordIncorrect(u) => println(s"password for user $u is incorrect")
+    case UnexpectedError => println("unexpected error")
+  }
+
+  val res1: LoginResult = User("donald", "trump").asRight
+  val res2: LoginResult = UserNotFound("dave").asLeft
+
+  res1.fold(handleError, println)
+  res2.fold(handleError, println)
 }

@@ -1,5 +1,8 @@
 package io.kirill.hellocats.monads
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
 trait MyMonad[F[_]] {
   def pure[A](value: A): F[A]
   def flatMap[A, B](value: F[A])(func: A => F[B]): F[B]
@@ -13,6 +16,7 @@ object C4_1_MonadBasics extends App {
   import cats.Id
   import cats.Monad
   import cats.instances.option._
+  import cats.instances.future._
   import cats.instances.list._
   import cats.syntax.applicative._
   import cats.syntax.functor._
@@ -28,9 +32,14 @@ object C4_1_MonadBasics extends App {
   val list3 = Monad[List].map(list2)(a => a + 123)
   println(list3)
 
+  val futureMonad = Monad[Future]
+  val future = futureMonad.flatMap(futureMonad.pure(1))(x => futureMonad.pure(x + 2))
+
   println(1.pure[Option])
 
   def sumSquare[F[_]: Monad](a: F[Int], b: F[Int]): F[Int] = a.flatMap(x => b.map(y => x*x + y*y))
+
+
   def sumSquareViaFor[F[_]: Monad](a: F[Int], b: F[Int]): F[Int] = {
     for {
       x <- a
