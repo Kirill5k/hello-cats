@@ -88,4 +88,13 @@ object Functors extends App {
 
   val showString = Show[String]
   val showSymbol = Contravariant[Show].contramap(showString)((sym: Symbol) => s"'${sym.name}")
+
+
+  val stringList = List("foo", "bar")
+  val transform: String => Int = _.length
+  val liftedTransform: List[String] => List[Int] = Functor[List].lift(transform)
+  println(liftedTransform(stringList))
+
+  val product = Functor[List].fproduct(stringList)(transform).toMap
+  println(product)
 }
