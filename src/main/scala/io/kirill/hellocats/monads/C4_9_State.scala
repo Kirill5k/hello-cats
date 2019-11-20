@@ -41,7 +41,7 @@ object C4_9_State extends App {
   } yield (a, b, c)
 
 
-  type CalcState[A] = State[List[Int], A]= ???
+  type CalcState[A] = State[List[Int], A]
 
   def evalOne(sym: String): CalcState[Int] =
     sym match {
