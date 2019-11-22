@@ -13,13 +13,6 @@ object C6_1_Semigroups extends App {
   import cats.Semigroupal
   import cats.instances.option._
   import cats.syntax.apply._
-
-  val s1 = Semigroupal[Option].product(Some(123), Some("abc"))
-  val s2 = Semigroupal[Option].product(None, Some("abc"))
-  val s3 = (Option(123), Option("abc")).tupled
-  println(s1)
-  println(s2)
-
   import cats.Monoid
   import cats.Monad
   import cats.instances.int._
@@ -30,6 +23,28 @@ object C6_1_Semigroups extends App {
   import cats.syntax.semigroup._
   import cats.syntax.flatMap._
   import cats.syntax.functor._
+  import cats.syntax.either._
+
+
+  def parseInt(str: String): Either[String, Int] =
+    Either.catchOnly[NumberFormatException](str.toInt).leftMap(_ => s"couldn't read $str")
+
+  val res = for {
+    a <- parseInt("a")
+    b <- parseInt("b")
+    c <- parseInt("c")
+  } yield (a+b+c)
+  println(res)
+
+  // joins contexts
+  val s1 = Semigroupal[Option].product(Some(123), Some("abc"))
+  val s2 = Semigroupal[Option].product(None, Some("abc"))
+  val s3 = (Option(123), Option("abc")).tupled
+  val s4 = (Option(123), None).tupled
+  println(s1)
+  println(s2)
+  println(s3)
+  println(s4)
 
   case class Cat(name: String, yearOfBirth: Int, favoriteFoods: List[String])
 
