@@ -21,6 +21,16 @@ class CacheSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
       result.asserting(_ must be (Some("value")))
     }
 
+
+    "should check if value exists" in {
+      val cache = Cache.of[IO, String, String](10 seconds, 2 seconds)
+
+      val result = cache.flatTap(_.put("key", "value")).flatMap(_.exists("key"))
+
+      result.asserting(_ must be (true))
+    }
+
+
     "should clear value if it has Expired" in {
       val cache = Cache.of[IO, String, String](1 seconds, 2 seconds)
 
