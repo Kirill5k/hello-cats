@@ -1,7 +1,6 @@
 package io.kirill.hellocats.usageexamples
 
 import java.time.Instant
-import java.util.concurrent.TimeUnit
 
 import cats.Monad
 import cats.effect.{Clock, Concurrent, Timer}
@@ -16,33 +15,35 @@ sealed trait Cache[F[_], K, V] {
   def put(key: K, value: V): F[Unit]
 }
 
-private class RefCache[F[_]: Clock: Concurrent, K, V](
-    expiresIn: FiniteDuration,
-    checkOnExpirationsEvery: FiniteDuration
-  )(implicit T: Timer[F]) extends Cache[F, K, V] {
-
-  private def runExpiration(currentState: Ref[F, Map[K, (Instant, V)]]): F[Unit] = {
-    val process = currentState.get.map(_.filter {
-      case (_, (exp, _)) => exp.isAfter(Instant.now.minusNanos(expiresIn.toNanos))
-    }).flatTap(currentState.set)
-    T.sleep(checkOnExpirationsEvery) >> process >> runExpiration(currentState)
-  }
-
-  private val state = Ref.of[F, Map[K, (Instant, V)]](Map.empty).flatTap(runExpiration(_))
+private class RefCache[F[_]: Clock: Monad, K, V](
+    state: Ref[F, Map[K, (Instant, V)]],
+    expiresIn: FiniteDuration
+  ) extends Cache[F, K, V] {
 
   override def get(key: K): F[Option[V]] =
-    state.flatMap(_.get.map(_.get(key).map { case (_, v) => v}))
+    state.get.map(_.get(key).map { case (_, v) => v})
 
   override def exists(key: K): F[Boolean] =
-    state.flatMap(_.get.map(_.contains(key)))
+    state.get.map(_.contains(key))
 
   override def put(key: K, value: V): F[Unit] =
-    state.flatMap(_.update(_.updated(key, (Instant.now.plusNanos(expiresIn.toNanos), value))))
+    state.update(_.updated(key, (Instant.now.plusNanos(expiresIn.toNanos), value)))
 }
 
 object Cache {
-  def refCache[F[_]: Clock: Concurrent, K, V](
+  def of[F[_]: Clock, K, V](
     expiresIn: FiniteDuration,
     checkOnExpirationsEvery: FiniteDuration
-  )(implicit T: Timer[F]): Cache[F, K, V] = new RefCache(expiresIn, checkOnExpirationsEvery)
+  )(implicit T: Timer[F], C: Concurrent[F]): F[Cache[F, K, V]] = {
+    def runExpiration(state: Ref[F, Map[K, (Instant, V)]]): F[Unit] = {
+      val process = state.get.map(_.filter {
+        case (_, (exp, _)) => exp.isAfter(Instant.now.minusNanos(expiresIn.toNanos))
+      }).flatTap(state.set)
+      T.sleep(checkOnExpirationsEvery) >> process >> runExpiration(state)
+    }
+
+    Ref.of[F, Map[K, (Instant, V)]](Map.empty)
+      .flatTap(s => C.start(runExpiration(s)).void)
+      .map(ref => new RefCache[F, K, V](ref, expiresIn))
+  }
 }
