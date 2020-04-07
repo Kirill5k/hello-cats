@@ -92,6 +92,7 @@ project/plugins/project/
 .history
 .cache
 .lib/
+null/
 
 ### Scala ###
 
