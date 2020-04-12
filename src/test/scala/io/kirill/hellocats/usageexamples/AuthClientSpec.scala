@@ -27,9 +27,11 @@ class AuthClientSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
           Response.ok[String](authResponse("token-2", 3600))
         )
 
-      val authClient = new AuthClient[IO]()
+      val authClient = AuthClient.authClient[IO]
 
-      val token = authClient.token
+      val token = authClient.flatMap { ac =>
+        Timer[IO].sleep(8 seconds) *> ac.token
+      }
 
       token.asserting(_ must be ("token-1"))
     }
@@ -42,9 +44,11 @@ class AuthClientSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
           Response.ok[String](authResponse("token-2", 3600))
         )
 
-      val authClient = new AuthClient[IO]()
+      val authClient = AuthClient.authClient[IO]
 
-      val token = Timer[IO].sleep(8 seconds) *> authClient.token
+      val token = authClient.flatMap { ac =>
+        Timer[IO].sleep(8 seconds) *> ac.token
+      }
 
       token.asserting(_ must be ("token-2"))
     }
