@@ -51,8 +51,8 @@ object AuthClient {
 
   final case class ApiError(message: String) extends Throwable
 
-  def authClient[F[_]: Concurrent: Clock](implicit c: Config, b: SttpBackend[F, Nothing, NothingT], t: Timer[F]): F[AuthClient[F]] = {
-    def renew(ref: Ref[F, AuthResponse]): F[Unit] = {
+  def authClient[F[_]: Concurrent](implicit c: Config, b: SttpBackend[F, Nothing, NothingT], t: Timer[F]): F[AuthClient[F]] = {
+    def renew(ref: Ref[F, AuthResponse]): F[Unit] =
       for {
         _ <- Concurrent[F].delay(println("renewing"))
         as <- ref.get
@@ -60,7 +60,6 @@ object AuthClient {
         _ <- AuthApi.authenticate.flatTap(ref.set)
         _ <- renew(ref)
       } yield ()
-    }
 
     Ref.of[F, AuthResponse](AuthResponse("foo", 0))
       .flatTap(ref => Concurrent[F].start(renew(ref)).void)
