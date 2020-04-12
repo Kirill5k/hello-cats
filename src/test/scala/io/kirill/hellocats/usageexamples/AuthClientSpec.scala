@@ -29,8 +29,8 @@ class AuthClientSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
 
       val authClient = AuthClient.authClient[IO]
 
-      val token = authClient.flatMap { ac =>
-        Timer[IO].sleep(8 seconds) *> ac.token
+      val token = IO.sleep(2 seconds) >> authClient.flatMap { ac =>
+        ac.token
       }
 
       token.asserting(_ must be ("token-1"))
