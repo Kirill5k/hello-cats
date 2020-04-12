@@ -20,6 +20,7 @@ class AuthClient[F[_]: Concurrent: Timer](implicit c: Config, b: SttpBackend[F, 
 
   private def renew(ref: Ref[F, AuthResponse]): F[Unit] = {
     for {
+      _ <- Concurrent[F].delay(println("renewing"))
       as <- ref.get
       _ <- Timer[F].sleep(as.expires_in seconds)
       _ <- authenticate().flatTap(ref.set)
@@ -30,9 +31,12 @@ class AuthClient[F[_]: Concurrent: Timer](implicit c: Config, b: SttpBackend[F, 
   private val authToken: F[Ref[F, AuthResponse]] =
     authenticate()
       .flatMap(res => Ref.of[F, AuthResponse](res))
-      .flatTap(renew)
+      .flatTap(ref => Concurrent[F].start(renew(ref)).void)
+
+  def token: F[String] = authToken.flatMap(_.get).map(_.access_token)
 
   private def authenticate(): F[AuthResponse] =
+    Concurrent[F].delay(println("authenticating")) *>
     basicRequest
       .body(Map("grant_type" -> "authorization_code"))
       .auth.basic(c.clientId, c.clientSecret)
