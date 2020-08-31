@@ -13,11 +13,11 @@ trait HttpClient[F[_]]
 trait Cache[F[_]]
 
 object KafkaClient {
-  def make[F]: Resource[F, KafkaClient[F]] = ???
+  def make[F[_]]: Resource[F, KafkaClient[F]] = ???
 }
 
 object HttpClient {
-  def make[F]: Resource[F, HttpClient[F]] = ???
+  def make[F[_]]: Resource[F, HttpClient[F]] = ???
 }
 
 trait Algebras[F[_]] {
@@ -45,12 +45,16 @@ object Client {
       case (k, h) =>
         new Clients[F] {
           override def kafka: KafkaClient[F] = k
-          override def http: HttpClient[F] = h
+          override def http: HttpClient[F]   = h
         }
     }
 }
 
 object MainProgram {
-  def program[F[_]: Monad: Parallel](algebras: Algebras[F], events: Events[F], cache: Cache[F], clients: Clients[F]): F[Unit] = ???
+  def program[F[_]: Monad: Parallel](
+      algebras: Algebras[F],
+      events: Events[F],
+      cache: Cache[F],
+      clients: Clients[F]
+  ): F[Unit] = ???
 }
-

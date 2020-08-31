@@ -9,7 +9,7 @@ import cats.effect.concurrent.Ref
 
 import scala.concurrent.duration.FiniteDuration
 
-sealed trait Cache[F[_], K, V] {
+sealed trait CacheF[F[_], K, V] {
   def get(key: K): F[Option[V]]
   def exists(key: K): F[Boolean]
   def put(key: K, value: V): F[Unit]
@@ -18,7 +18,7 @@ sealed trait Cache[F[_], K, V] {
 private class RefCache[F[_]: Clock: Monad, K, V](
     state: Ref[F, Map[K, (Instant, V)]],
     expiresIn: FiniteDuration
-  ) extends Cache[F, K, V] {
+  ) extends CacheF[F, K, V] {
 
   override def get(key: K): F[Option[V]] =
     state.get.map(_.get(key).map { case (_, v) => v})
@@ -30,11 +30,11 @@ private class RefCache[F[_]: Clock: Monad, K, V](
     state.update(_.updated(key, (Instant.now.plusNanos(expiresIn.toNanos), value)))
 }
 
-object Cache {
+object CacheF {
   def of[F[_]: Clock, K, V](
     expiresIn: FiniteDuration,
     checkOnExpirationsEvery: FiniteDuration
-  )(implicit T: Timer[F], C: Concurrent[F]): F[Cache[F, K, V]] = {
+  )(implicit T: Timer[F], C: Concurrent[F]): F[CacheF[F, K, V]] = {
     def runExpiration(state: Ref[F, Map[K, (Instant, V)]]): F[Unit] = {
       val process = state.get.map(_.filter {
         case (_, (exp, _)) => exp.isAfter(Instant.now.minusNanos(expiresIn.toNanos))
