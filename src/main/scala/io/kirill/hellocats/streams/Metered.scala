@@ -19,8 +19,11 @@ object Metered extends IOApp {
     .repeatEval(IO(println(LocalTime.now)))
     .evalTap(_ => IO.sleep(1.second))
 
+  val anotherImmediateStream = Stream
+    .repeatEval(IO(println(LocalTime.now)))
+    .zipLeft(Stream.awakeEvery[IO](1.second))
 
   override def run(args: List[String]): IO[ExitCode] =
-   IO(println(s"${LocalTime.now()} starting stream")) *> immediateTimeStream.compile.drain.as(ExitCode.Success)
+   IO(println(s"${LocalTime.now()} starting stream")) *> anotherImmediateStream.compile.drain.as(ExitCode.Success)
 
 }
