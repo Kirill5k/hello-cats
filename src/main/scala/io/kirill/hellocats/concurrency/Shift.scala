@@ -25,11 +25,9 @@ object Shift extends IOApp {
       result <- shiftLoop(id)(i + 1)
     } yield result
 
-  val shiftProgram = for {
-    _ <- shiftLoop("A")(0).start(cs)
-    _ <- shiftLoop("B")(0).start(cs)
-  } yield ExitCode.Success
-
   override def run(args: List[String]): IO[ExitCode] =
-    shiftProgram
+    for {
+      _ <- shiftLoop("A")(0).start(cs)
+      _ <- shiftLoop("B")(0).start(cs)
+    } yield ExitCode.Success
 }

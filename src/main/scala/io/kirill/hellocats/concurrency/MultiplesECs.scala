@@ -22,10 +22,9 @@ object MultiplesECs extends IOApp {
     result <- loop(id)(i + 1)
   } yield result
 
-  val program = for {
-    _ <- loop("A")(0).start(cs1)
-    _ <- loop("B")(0).start(cs2)
-  } yield ExitCode.Success
-
-  override def run(args: List[String]): IO[ExitCode] = program
+  override def run(args: List[String]): IO[ExitCode] =
+    for {
+      _ <- loop("A")(0).start(cs1)
+      _ <- loop("B")(0).start(cs2)
+    } yield ExitCode.Success
 }
