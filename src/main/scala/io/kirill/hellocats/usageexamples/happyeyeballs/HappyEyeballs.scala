@@ -8,20 +8,15 @@ import scala.concurrent.duration.FiniteDuration
 
 object HappyEyeballs {
 
-  def run[F[_]: Concurrent: Timer, A](tasks: List[F[A]], delay: FiniteDuration): F[A] =
+  def run[F[_], A](tasks: List[F[A]], delay: FiniteDuration)(implicit T: Timer[F], C: Concurrent[F]): F[A] =
     tasks match {
-      case Nil =>
-        Concurrent[F].raiseError(new IllegalArgumentException(""))
-      case head :: Nil =>
-        head
-      case head :: tail =>
+      case Nil => Concurrent[F].raiseError(new IllegalArgumentException("empty tasks list provided"))
+      case task :: Nil => task
+      case task :: otherTasks =>
         Deferred[F, Unit].flatMap { errorTrigger =>
-          val task1 = head.handleErrorWith(e => errorTrigger.complete(()) *> Concurrent[F].raiseError(e))
-          val waitForDelayOrError = Concurrent[F].race(Timer[F].sleep(delay), errorTrigger.get)
-          Concurrent[F].race(task1, waitForDelayOrError *> run(tail, delay)).map {
-            case Left(res) => res
-            case Right(res) => res
-          }
+          val taskWithErrorSignal = task.handleErrorWith(_ => errorTrigger.complete(()) *> C.never[A])
+          val waitForDelayOrSignal = C.race(T.sleep(delay), errorTrigger.get)
+          C.race(taskWithErrorSignal, waitForDelayOrSignal *> run(otherTasks, delay)).map(_.fold(l => l, r => r))
         }
     }
 }
