@@ -12,6 +12,6 @@ object Basics extends IOApp {
 
     val res = st1.merge(st2).interruptAfter(10.second).compile.toList
 
-    res.flatMap(r => IO(println(r))).as[ExitCode]
+    res.flatMap(r => IO(println(r))).as(ExitCode.Success)
   }
 }
