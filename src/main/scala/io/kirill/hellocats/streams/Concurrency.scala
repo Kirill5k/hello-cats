@@ -16,9 +16,7 @@ object Concurrency {
       Stream.sleep_[F](delay) ++ Stream.eval(interrupter.set(true))
 
     Stream.eval(SignallingRef[F, Boolean](false)).flatMap { interrupter =>
-      val stopper = stop(interrupter)
-      val runner  = out(interrupter)
-      runner.concurrently(stopper)
+      out(interrupter).concurrently(stop(interrupter))
     }
   }
 
