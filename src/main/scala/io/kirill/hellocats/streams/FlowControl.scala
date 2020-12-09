@@ -1,12 +1,14 @@
 package io.kirill.hellocats.streams
 
+import cats.effect.concurrent.MVar
 import cats.effect.{Concurrent, Timer}
+import cats.implicits._
 import fs2.Stream
-import fs2.concurrent.{Signal, SignallingRef}
+import fs2.concurrent.SignallingRef
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
-object Concurrency {
+object FlowControl {
 
   def stopAfter[F[_]: Concurrent: Timer, A](in: Stream[F, A], delay: FiniteDuration): Stream[F, A] = {
     def out(interrupter: SignallingRef[F, Boolean]): Stream[F, A] =
@@ -27,6 +29,17 @@ object Concurrency {
     Stream.eval(SignallingRef[F, Boolean](false)).flatMap { interrupter =>
       in.interruptWhen(interrupter).concurrently(close(interrupter))
     }
+  }
 
+  def slowDownEveryN[F[_]: Timer](resets: Stream[F, Unit], n: Int)(implicit F: Concurrent[F]): Stream[F, FiniteDuration] = {
+    val slowingDown       = Stream.eval_(F.delay(println("----- Slowing down -----")))
+    val resetting         = F.delay(println("----- Resetting delays! -----"))
+    val delaysExponential = Stream.iterate(1.milli)(_ * 2).flatMap(Stream.awakeDelay[F](_).take(n.toLong) ++ slowingDown)
+
+    Stream.eval(MVar.empty[F, Unit]).flatMap { restart =>
+      val delaysUntilReset = delaysExponential.interruptWhen(restart.take.attempt)
+
+      delaysUntilReset.repeat.concurrently(resets.evalMap(_ => restart.put(()) *> resetting))
+    }
   }
 }
