@@ -31,6 +31,13 @@ object FlowControl {
     }
   }
 
+  /**
+   * val slowDown = slowDownEveryN(
+   *    resets = Stream.awakeEvery[IO](3.seconds).void
+   *    n = 5
+   * )
+   * clientMessages.zipLeft(slowDown)
+   */
   def slowDownEveryN[F[_]: Timer](resets: Stream[F, Unit], n: Int)(implicit F: Concurrent[F]): Stream[F, FiniteDuration] = {
     val slowingDown       = Stream.eval_(F.delay(println("----- Slowing down -----")))
     val resetting         = F.delay(println("----- Resetting delays! -----"))
