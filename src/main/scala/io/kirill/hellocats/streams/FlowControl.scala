@@ -50,16 +50,17 @@ object FlowControl {
     }
   }
 
-  def sharded[F[_]](nShards: Int, action: Int => Int => F[Unit])(source: Stream[F, Int])(implicit F: Concurrent[F]): Stream[F, Unit] =
+  def sharded[F[_], A](nShards: Int, action: Int => A => F[Unit])(source: Stream[F, A])(implicit F: Concurrent[F]): Stream[F, Unit] =
     Stream
-      .eval(Queue.bounded[F, Int](100))
+      .eval(Queue.bounded[F, A](100))
       .replicateA(nShards)
       .map(_.zipWithIndex.map(_.swap).toMap)
       .flatMap { queues =>
-        source.flatMap { e =>
-          val n = e % nShards
-          val q = queues(n)
-          Stream.eval(q.enqueue1(e)).concurrently(q.dequeue.evalMap(action(n)))
+        source.zip(Stream.iterate(0)(_ + 1)).flatMap {
+          case (e, i) =>
+            val n = i % nShards
+            val q = queues(n)
+            Stream.eval(q.enqueue1(e)).concurrently(q.dequeue.evalMap(action(n)))
         }
       }
 
