@@ -4,7 +4,7 @@ import cats.effect.concurrent.MVar
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import fs2.{Pipe, Stream}
-import fs2.concurrent.SignallingRef
+import fs2.concurrent.{Queue, SignallingRef}
 
 import scala.concurrent.duration._
 
@@ -50,13 +50,18 @@ object FlowControl {
     }
   }
 
-  def tk[F[_],O](n: Long): Pipe[F,O,O] =
-    in => in.scanChunksOpt(n) { n =>
-      if (n <= 0) None
-      else Some(c => c.size match {
-        case m if m < n => (n - m, c)
-        case m => (0, c.take(n.toInt))
-      })
-    }
+  def sharded[F[_]](nShards: Int, action: Int => Int => F[Unit])(source: Stream[F, Int])(implicit F: Concurrent[F]): Stream[F, Unit] = {
+    Stream
+      .eval(Queue.bounded[F, Int](100))
+      .replicateA(nShards)
+      .map(_.zipWithIndex.map(_.swap).toMap)
+      .flatMap { queues =>
+        source.flatMap { e =>
+          val n = e % nShards
+          val q = queues(n)
+          Stream.eval(q.enqueue1(e)).concurrently(q.dequeue.evalMap(action(n)))
+        }
+      }
+  }
 
 }
