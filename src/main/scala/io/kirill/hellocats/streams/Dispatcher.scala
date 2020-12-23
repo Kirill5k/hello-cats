@@ -7,19 +7,19 @@ import fs2.Stream
 
 import scala.concurrent.duration._
 
-object Dispatcher extends IOApp{
+object Dispatcher extends IOApp {
 
   /**
    * Params:
    * - number-of-devices
-   * - mps (number-of-devices / 60)
    * Requirements:
    * - each device periodically (every minute) sends a message.
+   * - mps (number-of-devices / 60)
    */
 
-  def sendRequests[F[_]: Sync](payloads: List[String]): F[Unit] =
+  def sendRequests[F[_]: Sync: Timer](payloads: List[String]): F[Unit] =
     Sync[F].delay(println(s"${LocalTime.now()}: sending ${payloads.size} requests")) *>
-      payloads.traverse_(p => Sync[F].delay(println(s"- sending req $p")))
+      payloads.traverse_(p => Sync[F].delay(println(s"- sending req $p")) *> Timer[F].sleep(100.millis))
 
   def deviceFeed[F[_]: Sync: Timer](numberOfDevices: Int): Stream[F, Unit] =
     Stream
