@@ -19,16 +19,13 @@ object Dispatcher extends IOApp{
 
   def sendRequests[F[_]: Sync](payloads: List[String]): F[Unit] =
     Sync[F].delay(println(s"${LocalTime.now()}: sending ${payloads.size} requests")) *>
-      payloads.traverse_(sendRequest[F])
-
-  def sendRequest[F[_]: Sync](payload: String): F[Unit] =
-    Sync[F].delay(println(s"- sending req ${payload}"))
+      payloads.traverse_(p => Sync[F].delay(println(s"- sending req $p")))
 
   def deviceFeed[F[_]: Sync: Timer](numberOfDevices: Int): Stream[F, Unit] =
     Stream
       .range(0, numberOfDevices)
       .chunkN(numberOfDevices / 60)
-      .evalMap(c => c.traverse_(i => sendRequest(i.toString)))
+      .evalMap(c => sendRequests(c.map(_.toString).toList))
       .metered(1.second)
       .repeat
 
