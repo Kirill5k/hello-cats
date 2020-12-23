@@ -14,14 +14,14 @@ object Dispatcher extends IOApp{
    * - number-of-devices
    * - mps (number-of-devices / 60)
    * Requirements:
-   * - each device periodically sends a message every minute.
+   * - each device periodically (every minute) sends a message.
    */
 
 
   def sendRequest[F[_]: Sync](payload: String): F[Unit] =
     Sync[F].delay(println(s"${LocalTime.now()}: sending req ${payload}"))
 
-  def requestFeed[F[_]: Sync: Timer](numberOfDevices: Int): Stream[F, Unit] =
+  def deviceFeed[F[_]: Sync: Timer](numberOfDevices: Int): Stream[F, Unit] =
     Stream
       .range(0, numberOfDevices)
       .chunkN(numberOfDevices / 60)
@@ -29,7 +29,18 @@ object Dispatcher extends IOApp{
       .metered(1.second)
       .repeat
 
+  def deviceFeed2[F[_]: Sync: Timer](numberOfDevices: Int): Stream[F, Unit] = {
+    val delay = if (numberOfDevices < 60) 60.0 / numberOfDevices * 1000 else 1000
+    val groupsize = if (numberOfDevices < 60) 1 else numberOfDevices / 60
+    Stream
+      .range(0, numberOfDevices)
+      .chunkN(groupsize)
+      .evalMap(c => c.traverse(i => sendRequest(i.toString)).void)
+      .zipLeft(Stream.awakeEvery[F](delay.millis))
+      .repeat
+  }
+
 
   override def run(args: List[String]): IO[ExitCode] =
-    requestFeed[IO](60).compile.drain.as(ExitCode.Success)
+    deviceFeed2[IO](60).compile.drain.as(ExitCode.Success)
 }
