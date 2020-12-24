@@ -9,6 +9,12 @@ import scala.concurrent.duration._
 
 object Dispatcher extends IOApp {
 
+  def log[F[_]: Sync](message: String): F[Unit] =
+    Sync[F].delay(println(s"\n${LocalTime.now()}: $message"))
+
+  def appendLog[F[_]: Sync](message: String): F[Unit] =
+    Sync[F].delay(print(message))
+
   /**
    * Params:
    * - number-of-devices
@@ -18,8 +24,9 @@ object Dispatcher extends IOApp {
    */
 
   def sendRequests[F[_]: Sync: Timer](payloads: List[String]): F[Unit] =
-    Sync[F].delay(println(s"${LocalTime.now()}: sending ${payloads.size} requests")) *>
-      payloads.traverse_(p => Sync[F].delay(println(s"- sending req $p")) *> Timer[F].sleep(100.millis))
+    log(s"sending ${payloads.size} requests") *>
+      appendLog("- ") *>
+      payloads.traverse_(p => appendLog(s"req $p ") *> Timer[F].sleep(100.millis))
 
   def deviceFeed[F[_]: Sync: Timer](numberOfDevices: Int): Stream[F, Unit] =
     Stream
