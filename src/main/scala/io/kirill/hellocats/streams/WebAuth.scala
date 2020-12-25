@@ -12,28 +12,45 @@ import scala.concurrent.duration._
 object WebAuth extends IOApp {
 
   final case class AuthToken(token: String, expiresIn: Long)
+
   final case class Item(id: String)
+  final case class ItemsResponse(
+      items: List[Item],
+      page: Int,
+      nextPage: Option[Int]
+  )
 
   def authenticate[F[_]: Sync: Timer]: F[AuthToken] =
     log("authenticating") *>
       Timer[F].sleep(200.millis) *>
       Sync[F].delay(AuthToken(UUID.randomUUID().toString, 5000))
 
-  def authStream[F[_]: Sync: Timer]: Stream[F, String] = Stream
-    .eval(authenticate)
-    .flatMap(t => Stream(t.token).covary[F] ++ Stream.sleep_[F](t.expiresIn.millis))
-    .repeat
+  def authStream[F[_]: Sync: Timer]: Stream[F, String] =
+    Stream
+      .eval(authenticate)
+      .flatMap(t => Stream(t.token).covary[F] ++ Stream.sleep_[F](t.expiresIn.millis))
+      .repeat
 
-  def getItem[F[_]: Sync: Timer](token: String, page: Int): F[Option[Item]] =
+  def getItem[F[_]: Sync: Timer](token: String, page: Int): F[ItemsResponse] =
     log(s"getting item from page $page with token $token") *>
       Timer[F].sleep(1000.millis) *>
-      Sync[F].delay(if (page < 10) Some(Item(UUID.randomUUID().toString)) else None)
+      Sync[F].delay(
+        ItemsResponse(
+          List(Item(UUID.randomUUID().toString)),
+          page,
+          if (page < 10) Some(page + 1) else None
+        )
+      )
 
   def itemStream[F[_]: Sync: Timer](authToken: SignallingRef[F, String]): Stream[F, Item] =
     Stream
-      .unfoldEval(0) { page =>
-        authToken.get.flatMap(t => getItem(t, page)).map(i => i.map((_, page + 1)))
+      .unfoldEval[F, Option[Int], List[Item]](Some(0)) {
+        case Some(page) =>
+          authToken.get.flatMap(t => getItem(t, page).map(r => Some((r.items, r.nextPage))))
+        case None =>
+          Sync[F].pure(None)
       }
+      .flatMap(Stream.emits)
       .repeat
 
   override def run(args: List[String]): IO[ExitCode] =
