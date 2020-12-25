@@ -1,15 +1,13 @@
 package io.kirill.hellocats.usageexamples
 
-import cats.effect.{Clock, Concurrent, Sync, Timer}
 import cats.effect.concurrent.Ref
+import cats.effect.{Concurrent, Sync, Timer}
 import cats.implicits._
-import io.circe.Decoder
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.kirill.hellocats.usageexamples.AuthClient.{ApiError, AuthError, AuthResponse, Config}
-import sttp.client.{NothingT, SttpBackend}
-import sttp.client._
 import sttp.client.circe._
+import sttp.client.{NothingT, SttpBackend, _}
 import sttp.model.MediaType
 
 import scala.concurrent.duration._

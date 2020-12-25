@@ -44,11 +44,10 @@ object WebAuth extends IOApp {
 
   def itemStream[F[_]: Sync: Timer](authToken: SignallingRef[F, String]): Stream[F, Item] =
     Stream
-      .unfoldEval[F, Option[Int], List[Item]](Some(0)) {
-        case Some(page) =>
+      .unfoldEval[F, Option[Int], List[Item]](Some(0)) { currentPage =>
+        currentPage.traverse { page =>
           authToken.get.flatMap(t => getItem(t, page).map(r => Some((r.items, r.nextPage))))
-        case None =>
-          Sync[F].pure(None)
+        }.map(_.flatten)
       }
       .flatMap(Stream.emits)
       .repeat
