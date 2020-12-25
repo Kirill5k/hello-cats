@@ -28,8 +28,11 @@ object WebAuth extends IOApp {
   def authStream[F[_]: Sync: Timer](authToken: SignallingRef[F, AuthToken]): Stream[F, Unit] =
     Stream
       .eval(authToken.get)
-      .flatMap(t => Stream.sleep_[F](t.expiresIn.millis) ++ Stream.eval(authenticate).evalMap(authToken.set))
-      .repeat
+      .flatMap { t =>
+        Stream
+          .repeatEval(authenticate.flatMap(authToken.set))
+          .metered(t.expiresIn.millis)
+      }
 
   def getItem[F[_]: Sync: Timer](token: String, page: Int): F[ItemsResponse] =
     log(s"getting item from page $page with token $token") *>
