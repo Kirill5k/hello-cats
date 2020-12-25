@@ -46,8 +46,8 @@ object WebAuth extends IOApp {
     Stream
       .unfoldEval[F, Option[Int], List[Item]](Some(0)) { currentPage =>
         currentPage.traverse { page =>
-          authToken.get.flatMap(t => getItem(t, page).map(r => Some((r.items, r.nextPage))))
-        }.map(_.flatten)
+          authToken.get.flatMap(t => getItem(t, page).map(r => (r.items, r.nextPage)))
+        }
       }
       .flatMap(Stream.emits)
       .repeat
