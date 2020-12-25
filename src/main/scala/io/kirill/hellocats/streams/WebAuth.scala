@@ -47,10 +47,8 @@ object WebAuth extends IOApp {
 
   def itemStream[F[_]: Sync: Timer](authToken: SignallingRef[F, AuthToken]): Stream[F, Item] =
     Stream
-      .unfoldEval[F, Option[Int], List[Item]](Some(0)) { currentPage =>
-        currentPage.traverse { page =>
-          authToken.get.flatMap(t => getItem(t.token, page).map(r => (r.items, r.nextPage)))
-        }
+      .unfoldLoopEval[F, Int, List[Item]](0) { page =>
+        authToken.get.flatMap(t => getItem(t.token, page).map(r => (r.items, r.nextPage)))
       }
       .flatMap(Stream.emits)
 
