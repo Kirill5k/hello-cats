@@ -4,16 +4,11 @@ import java.time.LocalTime
 import cats.effect.{ExitCode, IO, IOApp, Sync, Timer}
 import cats.implicits._
 import fs2.Stream
+import utils._
 
 import scala.concurrent.duration._
 
 object Dispatcher extends IOApp {
-
-  def log[F[_]: Sync](message: String): F[Unit] =
-    Sync[F].delay(println(s"\n${LocalTime.now()}: $message"))
-
-  def appendLog[F[_]: Sync](message: String): F[Unit] =
-    Sync[F].delay(print(message))
 
   /**
    * Params:
@@ -24,7 +19,7 @@ object Dispatcher extends IOApp {
    */
 
   def sendRequests[F[_]: Sync: Timer](payloads: List[String]): F[Unit] =
-    log(s"sending ${payloads.size} requests") *>
+    appendLog("\n") *> log(s"sending ${payloads.size} requests") *>
       appendLog("- ") *>
       payloads.traverse_(p => appendLog(s"req $p ") *> Timer[F].sleep(100.millis))
 
@@ -49,5 +44,5 @@ object Dispatcher extends IOApp {
 
 
   override def run(args: List[String]): IO[ExitCode] =
-    deviceFeed2[IO](300).compile.drain.as(ExitCode.Success)
+    deviceFeed2[IO](600).compile.drain.as(ExitCode.Success)
 }
