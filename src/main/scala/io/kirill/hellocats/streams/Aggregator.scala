@@ -33,8 +33,8 @@ object Aggregator extends IOApp {
   def queryProviders[F[_]: Concurrent: Timer](query: Query): Stream[F, Quote] =
     Stream
       .emits(providers)
-      .map(p => Stream.eval[F, Option[Quote]](queryProvider[F](p, query)))
-      .parJoinUnbounded[F, Option[Quote]]
+      .map(p => Stream.eval(queryProvider[F](p, query)))
+      .parJoinUnbounded
       .unNone
 
   override def run(args: List[String]): IO[ExitCode] =
