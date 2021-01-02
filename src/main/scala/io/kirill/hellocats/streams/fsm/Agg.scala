@@ -5,7 +5,10 @@ import monocle.macros._
 
 import java.time.Instant
 
-final case class Points(value: Int) extends AnyVal
+final case class Points(value: Int) extends AnyVal {
+  def +(points: Int): Points =
+    Points(value+points)
+}
 
 final case class Summary(
     playerId: PlayerId,
