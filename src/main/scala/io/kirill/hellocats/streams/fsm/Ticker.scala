@@ -23,12 +23,12 @@ object Ticker {
       maxNrOfEvents: Int,
       timeWindow: FiniteDuration
   ): F[Ticker[F]] =
-    Ref.of[F, Tick](Tick.Off).map { ref =>
+    Ref.of[F, Tick](Tick.Off).map { tick =>
       new Ticker[F] {
-        def get: F[Tick] = ref.get
+        def get: F[Tick] = tick.get
 
         def merge(timerTick: Tick, count: Count): F[(Tick, Count)] =
-          ref
+          tick
             .modify {
               case Tick.Off if count === maxNrOfEvents => Tick.On  -> 0
               case _ if timerTick === Tick.On          => Tick.Off -> 0
@@ -43,16 +43,15 @@ object Ticker {
 
         def ticks: Stream[F, Tick] = {
           val duration = timeWindow.toNanos
-          val interval = FiniteDuration((timeWindow.toSeconds * 0.05).toLong, SECONDS).toNanos
+          val interval = (duration * 0.05).toLong
 
-          def go(lastSpikeNanos: Long): Stream[F, Tick] =
-            Stream.eval((Concurrent[F].delay(Instant.now.getNano), get).tupled).flatMap { case (now, tick) =>
+          Stream.unfoldLoopEval[F, Long, Tick](0) { lastSpikeNanos =>
+            (Clock[F].monotonic(NANOSECONDS), get).tupled.map { case (now, tick) =>
               if ((now - lastSpikeNanos) > duration || (tick === Tick.On && (now - lastSpikeNanos) > interval))
-                Stream.emit(Tick.On) ++ go(now)
-              else Stream.emit(Tick.Off) ++ go(lastSpikeNanos)
+                (Tick.On, Some(now))
+              else (Tick.Off, Some(lastSpikeNanos))
             }
-
-          go(0).tail
+          }.tail
         }
 
       }
