@@ -28,32 +28,34 @@ final case class Engine[F[_]: Concurrent: Parallel: Time: Timer](
 }
 
 object Engine {
-  type Result = (Map[PlayerId, Agg], Tick)
+  type Input  = (Option[Event], Tick)
+  type Output = (Map[PlayerId, Agg], Tick)
   type State  = (Map[PlayerId, Agg], Count)
 
-  def fsm[F[_]: Applicative](
-      ticker: Ticker[F]
-  ): FSM[F, State, (Option[Event], Tick), Result] = FSM {
-    case ((m, count), (Some(event), tick)) =>
-      val (playerId, modifier) = event match {
-        case Event.LevelUp(pid, level, _) =>
-          pid -> Agg._Points.modify(_ + 100).andThen(Agg._Level.set(level))
-        case Event.PuzzleSolved(pid, _, _, _) =>
-          pid -> Agg._Points.modify(_ + 50)
-        case Event.GemCollected(pid, gemType, _) =>
-          pid -> Agg._Points.modify(_ + 10).andThen {
-            Agg._Gems.modify(_.updatedWith(gemType)(_.map(_ + 1).orElse(Some(1))))
+  def fsm[F[_]: Applicative](ticker: Ticker[F]): FSM[F, State, Input, Output] = new FSM[F, State, Input, Output] {
+    override def run(state: State, input: Input): F[(State, Output)] =
+      (state, input) match {
+        case ((m, count), (Some(event), tick)) =>
+          val (playerId, modifier) = event match {
+            case Event.LevelUp(pid, level, _) =>
+              pid -> Agg._Points.modify(_ + 100).andThen(Agg._Level.set(level))
+            case Event.PuzzleSolved(pid, _, _, _) =>
+              pid -> Agg._Points.modify(_ + 50)
+            case Event.GemCollected(pid, gemType, _) =>
+              pid -> Agg._Points.modify(_ + 10).andThen {
+                Agg._Gems.modify(_.updatedWith(gemType)(_.map(_ + 1).orElse(Some(1))))
+              }
           }
-      }
-      val agg = m.getOrElse(playerId, Agg.empty)
-      val out = m.updated(playerId, modifier(agg))
-      val nst = if (tick === Tick.On) Map.empty[PlayerId, Agg] else out
+          val agg = m.getOrElse(playerId, Agg.empty)
+          val out = m.updated(playerId, modifier(agg))
+          val nst = if (tick === Tick.On) Map.empty[PlayerId, Agg] else out
 
-      ticker.merge(tick, count).map { case (newTick, newCount) =>
-        (nst -> newCount) -> (out -> newTick)
+          ticker.merge(tick, count).map { case (newTick, newCount) =>
+            (nst -> newCount) -> (out -> newTick)
+          }
+        case ((m, _), (None, _)) =>
+          ((Map.empty[PlayerId, Agg] -> 0) -> (m -> Tick.On.asInstanceOf[Tick])).pure[F]
       }
-    case ((m, _), (None, _)) =>
-      ((Map.empty[PlayerId, Agg] -> 0) -> (m -> Tick.On.asInstanceOf[Tick])).pure[F]
   }
 
 }
