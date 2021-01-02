@@ -1,21 +1,20 @@
 package io.kirill.hellocats.streams.fsm
 
-import cats.{Applicative, Parallel}
+import cats.Parallel
 import cats.effect._
 import cats.implicits._
-import io.kirill.hellocats.streams.fsm.game._
 import fs2.Pipe
+import io.kirill.hellocats.streams.fsm.game._
 
 final case class Engine[F[_]: Concurrent: Parallel: Time: Timer](
     publish: Summary => F[Unit],
     ticker: Ticker[F]
 ) {
-  private val fsm = Engine.fsm[F](ticker)
 
   def run: Pipe[F, Event, Unit] =
     _.noneTerminate
       .zip(ticker.ticks)
-      .evalMapAccumulate(Map.empty[PlayerId, Agg] -> 0)(fsm.run)
+      .mapAccumulate(Map.empty[PlayerId, Agg])(Engine.fsm.run)
       .collect { case (_, (out, Tick.On)) => out }
       .evalMap { m =>
         Time[F].now.flatMap { ts =>
@@ -29,21 +28,19 @@ final case class Engine[F[_]: Concurrent: Parallel: Time: Timer](
 object Engine {
   type Input  = (Option[Event], Tick)
   type Output = (Map[PlayerId, Agg], Tick)
-  type State  = (Map[PlayerId, Agg], Int)
+  type State  = Map[PlayerId, Agg]
 
-  def fsm[F[_]: Applicative](ticker: Ticker[F]): FSM[F, State, Input, Output] = new FSM[F, State, Input, Output] {
-    override def run(state: State, input: Input): F[(State, Output)] =
+  def fsm: FSM[State, Input, Output] = new FSM[State, Input, Output] {
+    override def run(state: State, input: Input): (State, Output) =
       (state, input) match {
-        case ((aggs, count), (Some(event), tick)) =>
+        case (aggs, (Some(event), tick)) =>
           val agg       = aggs.getOrElse(event.playerId, Agg.empty)
           val out       = aggs.updated(event.playerId, agg.update(event))
           val nextState = if (tick === Tick.On) Map.empty[PlayerId, Agg] else out
 
-          ticker.merge(tick, count).map { case (newTick, newCount) =>
-            (nextState -> newCount) -> (out -> newTick)
-          }
-        case ((aggs, _), (None, _)) =>
-          ((Map.empty[PlayerId, Agg] -> 0) -> (aggs -> Tick.On.asInstanceOf[Tick])).pure[F]
+          nextState -> (out -> tick)
+        case (aggs, (None, _)) =>
+          Map.empty[PlayerId, Agg] -> (aggs -> Tick.On.asInstanceOf[Tick])
       }
   }
 
