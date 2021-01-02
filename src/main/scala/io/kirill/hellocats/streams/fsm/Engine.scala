@@ -5,7 +5,6 @@ import cats.effect._
 import cats.implicits._
 import io.kirill.hellocats.streams.fsm.game._
 import fs2.Pipe
-import io.kirill.hellocats.streams.fsm.Ticker.Count
 
 final case class Engine[F[_]: Concurrent: Parallel: Time: Timer](
     publish: Summary => F[Unit],
@@ -30,12 +29,12 @@ final case class Engine[F[_]: Concurrent: Parallel: Time: Timer](
 object Engine {
   type Input  = (Option[Event], Tick)
   type Output = (Map[PlayerId, Agg], Tick)
-  type State  = (Map[PlayerId, Agg], Count)
+  type State  = (Map[PlayerId, Agg], Int)
 
   def fsm[F[_]: Applicative](ticker: Ticker[F]): FSM[F, State, Input, Output] = new FSM[F, State, Input, Output] {
     override def run(state: State, input: Input): F[(State, Output)] =
       (state, input) match {
-        case ((m, count), (Some(event), tick)) =>
+        case ((aggs, count), (Some(event), tick)) =>
           val (playerId, modifier) = event match {
             case Event.LevelUp(pid, level, _) =>
               pid -> Agg._Points.modify(_ + 100).andThen(Agg._Level.set(level))
@@ -46,15 +45,15 @@ object Engine {
                 Agg._Gems.modify(_.updatedWith(gemType)(_.map(_ + 1).orElse(Some(1))))
               }
           }
-          val agg = m.getOrElse(playerId, Agg.empty)
-          val out = m.updated(playerId, modifier(agg))
+          val agg = aggs.getOrElse(playerId, Agg.empty)
+          val out = aggs.updated(playerId, modifier(agg))
           val nst = if (tick === Tick.On) Map.empty[PlayerId, Agg] else out
 
           ticker.merge(tick, count).map { case (newTick, newCount) =>
             (nst -> newCount) -> (out -> newTick)
           }
-        case ((m, _), (None, _)) =>
-          ((Map.empty[PlayerId, Agg] -> 0) -> (m -> Tick.On.asInstanceOf[Tick])).pure[F]
+        case ((aggs, _), (None, _)) =>
+          ((Map.empty[PlayerId, Agg] -> 0) -> (aggs -> Tick.On.asInstanceOf[Tick])).pure[F]
       }
   }
 

@@ -1,23 +1,19 @@
 package io.kirill.hellocats.streams.fsm
 
 import scala.concurrent.duration._
-import Ticker.Count
 import cats._
 import cats.effect._
 import cats.effect.concurrent.Ref
 import cats.implicits._
 import fs2.Stream
 
-import java.time.Instant
-
 trait Ticker[F[_]] {
   def get: F[Tick]
-  def merge(timerTick: Tick, count: Count): F[(Tick, Count)]
+  def merge(timerTick: Tick, count: Int): F[(Tick, Int)]
   def ticks: Stream[F, Tick]
 }
 
 object Ticker {
-  type Count = Int
 
   def create[F[_]: Clock: Concurrent](
       maxNrOfEvents: Int,
@@ -27,7 +23,7 @@ object Ticker {
       new Ticker[F] {
         def get: F[Tick] = tick.get
 
-        def merge(timerTick: Tick, count: Count): F[(Tick, Count)] =
+        def merge(timerTick: Tick, count: Int): F[(Tick, Int)] =
           tick
             .modify {
               case Tick.Off if count === maxNrOfEvents => Tick.On  -> 0
