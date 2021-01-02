@@ -15,10 +15,10 @@ final case class Engine[F[_]: Concurrent: Parallel: Time: Timer](
     _.noneTerminate
       .zip(ticker.ticks)
       .mapAccumulate(Map.empty[PlayerId, Agg])(Engine.fsm.run)
-      .collect { case (_, (out, Tick.On)) => out }
-      .evalMap { m =>
+      .collect { case (_, (outputState, Tick.On)) => outputState }
+      .evalMap { state =>
         Time[F].now.flatMap { ts =>
-          m.toList.parTraverse_ { case (pid, agg) =>
+          state.toList.parTraverse_ { case (pid, agg) =>
             publish(agg.summary(pid, ts))
           }
         }
@@ -26,9 +26,9 @@ final case class Engine[F[_]: Concurrent: Parallel: Time: Timer](
 }
 
 object Engine {
-  type Input  = (Option[Event], Tick)
-  type Output = (Map[PlayerId, Agg], Tick)
   type State  = Map[PlayerId, Agg]
+  type Input  = (Option[Event], Tick)
+  type Output = (State, Tick)
 
   def fsm: FSM[State, Input, Output] = new FSM[State, Input, Output] {
     override def run(state: State, input: Input): (State, Output) =
