@@ -34,6 +34,7 @@ object game {
   }
 
   sealed trait Event {
+    def playerId: PlayerId
     def createdAt: Instant
   }
 

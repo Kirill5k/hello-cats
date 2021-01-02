@@ -25,6 +25,20 @@ final case class Agg(
 ) {
   def summary(pid: PlayerId, ts: Instant): Summary =
     Summary(pid, level, points, gems, ts)
+
+  def update(event: Event): Agg = {
+    val upd = event match {
+      case Event.LevelUp(_, level, _) =>
+        Agg._Points.modify(_ + 100).andThen(Agg._Level.set(level))
+      case Event.PuzzleSolved(_, _, _, _) =>
+        Agg._Points.modify(_ + 50)
+      case Event.GemCollected(_, gemType, _) =>
+        Agg._Points.modify(_ + 10).andThen {
+          Agg._Gems.modify(_.updatedWith(gemType)(_.map(_ + 1).orElse(Some(1))))
+        }
+    }
+    upd(this)
+  }
 }
 
 object Agg {

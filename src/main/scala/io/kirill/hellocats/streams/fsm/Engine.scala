@@ -35,22 +35,12 @@ object Engine {
     override def run(state: State, input: Input): F[(State, Output)] =
       (state, input) match {
         case ((aggs, count), (Some(event), tick)) =>
-          val (playerId, modifier) = event match {
-            case Event.LevelUp(pid, level, _) =>
-              pid -> Agg._Points.modify(_ + 100).andThen(Agg._Level.set(level))
-            case Event.PuzzleSolved(pid, _, _, _) =>
-              pid -> Agg._Points.modify(_ + 50)
-            case Event.GemCollected(pid, gemType, _) =>
-              pid -> Agg._Points.modify(_ + 10).andThen {
-                Agg._Gems.modify(_.updatedWith(gemType)(_.map(_ + 1).orElse(Some(1))))
-              }
-          }
-          val agg = aggs.getOrElse(playerId, Agg.empty)
-          val out = aggs.updated(playerId, modifier(agg))
-          val nst = if (tick === Tick.On) Map.empty[PlayerId, Agg] else out
+          val agg = aggs.getOrElse(event.playerId, Agg.empty)
+          val out = aggs.updated(event.playerId, agg.update(event))
+          val nextState = if (tick === Tick.On) Map.empty[PlayerId, Agg] else out
 
           ticker.merge(tick, count).map { case (newTick, newCount) =>
-            (nst -> newCount) -> (out -> newTick)
+            (nextState -> newCount) -> (out -> newTick)
           }
         case ((aggs, _), (None, _)) =>
           ((Map.empty[PlayerId, Agg] -> 0) -> (aggs -> Tick.On.asInstanceOf[Tick])).pure[F]
