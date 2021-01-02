@@ -35,8 +35,8 @@ object Engine {
     override def run(state: State, input: Input): F[(State, Output)] =
       (state, input) match {
         case ((aggs, count), (Some(event), tick)) =>
-          val agg = aggs.getOrElse(event.playerId, Agg.empty)
-          val out = aggs.updated(event.playerId, agg.update(event))
+          val agg       = aggs.getOrElse(event.playerId, Agg.empty)
+          val out       = aggs.updated(event.playerId, agg.update(event))
           val nextState = if (tick === Tick.On) Map.empty[PlayerId, Agg] else out
 
           ticker.merge(tick, count).map { case (newTick, newCount) =>
