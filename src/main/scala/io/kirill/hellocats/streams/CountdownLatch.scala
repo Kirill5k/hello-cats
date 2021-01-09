@@ -22,7 +22,7 @@ final private class RefbasedCountdownLatch[F[_]](
 
   override def decrement(): F[Unit] =
     counts.updateAndGet(_ - 1).flatMap { currentCount =>
-      if (currentCount <= 0) latch.complete(()) else F.unit
+      if (currentCount == 0) latch.complete(()) else F.unit
     }
 }
 
