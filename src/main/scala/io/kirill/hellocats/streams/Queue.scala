@@ -2,9 +2,10 @@ package io.kirill.hellocats.streams
 
 import cats.implicits._
 import cats.effect._
-import concurrent._
+import cats.effect.concurrent.{Deferred, Ref}
 
-/** unbounded queue, `dequeue` semantically blocks on empty queue
+/**
+ * unbounded queue, `dequeue` semantically blocks on empty queue
   */
 trait Queue[F[_], A] {
   def enqueue(a: A): F[Unit]
