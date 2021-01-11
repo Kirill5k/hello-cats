@@ -17,8 +17,8 @@ object Resources extends IOApp {
       count <- F.delay(new java.util.concurrent.atomic.AtomicLong(0))
       _     <- putStr(s"$name acquired/incremented: ${count.incrementAndGet()}")
       releasable = new Releasable[F] {
-        override def release: F[Unit] = putStr[F](s"$name  released/decremented: ${count.decrementAndGet}")
-        override def reportValue: F[Unit]    = putStr[F](s"$name current count is ${count.intValue()}")
+        override def release: F[Unit]     = putStr[F](s"$name released/decremented: ${count.decrementAndGet}")
+        override def reportValue: F[Unit] = putStr[F](s"$name current count is ${count.intValue()}")
       }
     } yield releasable
 
