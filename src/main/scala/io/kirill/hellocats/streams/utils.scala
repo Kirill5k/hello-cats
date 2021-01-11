@@ -6,8 +6,8 @@ import java.time.LocalTime
 
 object utils {
 
-  def putStr[F[_]: Sync](str: String): F[Unit] =
-    Sync[F].delay(println(str))
+  def putStr[F[_]: Sync](str: Any): F[Unit] =
+    Sync[F].delay(println(str.toString))
 
   def log[F[_]: Sync](message: String): F[Unit] =
     Sync[F].delay(println(s"${LocalTime.now()}: $message"))
