@@ -1,5 +1,6 @@
 package io.kirill.hellocats.streams
 
+import cats.effect.concurrent.Ref
 import cats.effect.{ExitCode, IO, IOApp, Resource, Sync}
 import cats.implicits._
 import fs2.Stream
@@ -14,11 +15,11 @@ object Resources extends IOApp {
 
   def syncCounter[F[_]](name: String)(implicit F: Sync[F]): F[Releasable[F]] =
     for {
-      count <- F.delay(new java.util.concurrent.atomic.AtomicLong(0))
-      _     <- putStr(s"$name acquired/incremented: ${count.incrementAndGet()}")
+      count <- Ref.of[F, Int](0)
+      _     <- count.updateAndGet(_ + 1).flatMap(c => putStr(s"$name acquired/incremented: $c"))
       releasable = new Releasable[F] {
-        override def release: F[Unit]     = putStr[F](s"$name released/decremented: ${count.decrementAndGet}")
-        override def reportValue: F[Unit] = putStr[F](s"$name current count is ${count.intValue()}")
+        override def release: F[Unit]     = count.updateAndGet(_ - 1).flatMap(c => putStr[F](s"$name released/decremented: $c"))
+        override def reportValue: F[Unit] = count.get.flatMap(c => putStr[F](s"$name current count is $c"))
       }
     } yield releasable
 
