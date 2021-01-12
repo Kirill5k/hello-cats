@@ -2,6 +2,7 @@ package io.kirill.hellocats.streams
 
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
+import io.kirill.hellocats.effects.CountdownLatch
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.must.Matchers
 

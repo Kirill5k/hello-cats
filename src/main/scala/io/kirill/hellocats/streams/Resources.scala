@@ -4,7 +4,7 @@ import cats.effect.concurrent.Ref
 import cats.effect.{ExitCode, IO, IOApp, Resource, Sync}
 import cats.implicits._
 import fs2.Stream
-import utils._
+import io.kirill.hellocats.utils.printing._
 
 object Resources extends IOApp {
 

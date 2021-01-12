@@ -5,7 +5,7 @@ import java.time.LocalTime
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.effect.implicits._
 import fs2.Stream
-import utils._
+import io.kirill.hellocats.utils.printing._
 
 import scala.concurrent.duration._
 
@@ -23,9 +23,6 @@ object Metered extends IOApp {
   val anotherImmediateStream = Stream
     .repeatEval(IO(println(LocalTime.now)))
     .zipLeft(Stream.awakeEvery[IO](1.second))
-
-
-
 
   override def run(args: List[String]): IO[ExitCode] =
    putStr[IO](s"${LocalTime.now()} starting stream") *> anotherImmediateStream.compile.drain.as(ExitCode.Success)

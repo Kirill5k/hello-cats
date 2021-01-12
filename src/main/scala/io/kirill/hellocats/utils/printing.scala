@@ -1,10 +1,10 @@
-package io.kirill.hellocats.streams
+package io.kirill.hellocats.utils
 
 import cats.effect.Sync
 
 import java.time.LocalTime
 
-object utils {
+object printing {
 
   def putStr[F[_]: Sync](str: Any): F[Unit] =
     Sync[F].delay(println(str.toString))

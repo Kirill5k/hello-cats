@@ -5,7 +5,7 @@ import cats.effect.{ExitCode, IO, IOApp, Sync, Timer}
 import cats.implicits._
 import fs2.Stream
 import fs2.concurrent.SignallingRef
-import utils._
+import io.kirill.hellocats.utils.printing._
 
 import scala.concurrent.duration._
 

@@ -1,4 +1,4 @@
-package io.kirill.hellocats.streams
+package io.kirill.hellocats.effects
 
 import cats.Monad
 import cats.effect.Concurrent

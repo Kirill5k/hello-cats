@@ -4,7 +4,7 @@ import java.time.LocalTime
 import cats.effect.{ExitCode, IO, IOApp, Sync, Timer}
 import cats.implicits._
 import fs2.Stream
-import utils._
+import io.kirill.hellocats.utils.printing._
 
 import scala.concurrent.duration._
 

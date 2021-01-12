@@ -5,6 +5,7 @@ import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import fs2.{Pipe, Stream}
 import fs2.concurrent.{Queue, SignallingRef}
+import io.kirill.hellocats.utils.printing._
 
 import scala.concurrent.duration._
 
@@ -39,8 +40,8 @@ object FlowControl {
    * clientMessages.zipLeft(slowDown)
    */
   def slowDownEveryN[F[_]: Timer](resets: Stream[F, Unit], n: Int)(implicit F: Concurrent[F]): Stream[F, FiniteDuration] = {
-    val slowingDown       = Stream.eval_(F.delay(println("----- Slowing down -----")))
-    val resetting         = F.delay(println("----- Resetting delays! -----"))
+    val slowingDown       = Stream.eval_(putStr("----- Slowing down -----"))
+    val resetting         = putStr("----- Resetting delays! -----")
     val delaysExponential = Stream.iterate(1.milli)(_ * 2).flatMap(Stream.awakeDelay[F](_).take(n.toLong) ++ slowingDown)
 
     Stream.eval(MVar.empty[F, Unit]).flatMap { restart =>
