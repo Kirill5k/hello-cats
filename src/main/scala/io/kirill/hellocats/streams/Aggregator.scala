@@ -4,7 +4,7 @@ import cats.effect.{Concurrent, ExitCode, IO, IOApp, Sync, Timer}
 import cats.implicits._
 import fs2.Stream
 import fs2.concurrent.Queue
-import utils._
+import io.kirill.hellocats.utils.printing._
 
 import scala.util.Random
 import scala.concurrent.duration._

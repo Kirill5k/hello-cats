@@ -3,7 +3,6 @@ package io.kirill.hellocats.streams
 import java.time.LocalTime
 
 import cats.effect.{ExitCode, IO, IOApp}
-import cats.effect.implicits._
 import fs2.Stream
 import io.kirill.hellocats.utils.printing._
 

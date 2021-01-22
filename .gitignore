@@ -96,4 +96,7 @@ null/
 
 ### Scala ###
 
+### OS ###
+.DS_Store
+
 # End of https://www.gitignore.io/api/sbt,java,scala,intellij
