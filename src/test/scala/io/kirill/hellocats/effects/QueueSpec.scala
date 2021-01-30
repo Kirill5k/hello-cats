@@ -5,6 +5,8 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.must.Matchers
 
+import scala.concurrent.duration._
+
 class QueueSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
 
   "An UnboundedQueue should" - {
@@ -19,6 +21,16 @@ class QueueSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
       } yield (e1, e2)
 
       res.asserting(_ mustBe ("e1", "e2"))
+    }
+
+    "wait on dequeue until element is queued" in {
+      val res = for {
+        queue <- Queue.unbounded[IO, String]
+        _     <- (IO.sleep(3.seconds) *> queue.enqueue("e1")).start.void
+        e1    <- queue.dequeue
+      } yield e1
+
+      res.asserting(_ mustBe "e1")
     }
   }
 }
