@@ -15,23 +15,25 @@ final private class UnboundedQueue[F[_]: Concurrent, A](
     private val state: Ref[F, (Vector[A], Vector[Deferred[F, A]])]
 ) extends Queue[F, A] {
 
-  override def enqueue(e: A): F[Unit] =
-    state.get.flatMap {
+  override def enqueue(e: A): F[Unit] = {
+    state.modify {
       case (els, waits) if waits.isEmpty =>
-        state.set((els :+ e, waits))
+        ((els :+ e, waits), ().pure[F])
       case (els, w +: waits) =>
-        state.set((els, waits)) *> w.complete(e)
-    }
+        ((els, waits), w.complete(e))
+    }.flatten
+  }
 
   override def dequeue: F[A] =
-    state.get.flatMap {
-      case (els, waits) if els.isEmpty =>
-        Deferred[F, A].flatMap { w =>
-          state.set((els, w +: waits)) *> w.get
-        }
-      case (e +: els, waits) =>
-        state.set((els, waits)) *> e.pure[F]
+    Deferred[F, A].flatMap { w =>
+      state.modify {
+        case (els, waits) if els.isEmpty =>
+          ((els, w +: waits), w.get)
+        case (e +: els, waits) =>
+          ((els, waits), e.pure[F])
+      }.flatten
     }
+
 }
 
 object Queue {
