@@ -7,7 +7,7 @@ import cats.implicits._
 /** unbounded queue, `dequeue` semantically blocks on empty queue
   */
 trait Queue[F[_], A] {
-  def enqueue(a: A): F[Unit]
+  def enqueue(e: A): F[Unit]
   def dequeue: F[A]
 }
 
@@ -15,9 +15,23 @@ final private class UnboundedQueue[F[_]: Concurrent, A](
     private val state: Ref[F, (Vector[A], Vector[Deferred[F, A]])]
 ) extends Queue[F, A] {
 
-  override def enqueue(a: A): F[Unit] = ???
+  override def enqueue(e: A): F[Unit] =
+    state.get.flatMap {
+      case (els, waits) if waits.empty =>
+        state.set((els :+ e, waits))
+      case (els, w +: waits) =>
+        state.set((els, waits)) *> w.complete(e)
+    }
 
-  override def dequeue: F[A] = ???
+  override def dequeue: F[A] =
+    state.get.flatMap {
+      case (els, waits) if els.empty =>
+        Deferred[F, A].flatMap { w =>
+          state.set((els, w +: waits)) *> w.get
+        }
+      case (e +: els, waits) =>
+        state.set((els, waits)) *> e.pure[F]
+    }
 }
 
 object Queue {
