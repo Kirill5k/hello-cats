@@ -11,7 +11,7 @@ object Throttling extends IOApp {
 
   def throttle[F[_]: Sync: Timer, A](stream: Stream[F, A], time: FiniteDuration, count: Int): Stream[F, A] = {
     val ticks = Stream.every[F](time)
-    stream.zip(ticks).scan[(Option[A], Int)]((None, 0)) {
+    stream.zip(ticks).scan[(Option[A], Int)]((None, count + 1)) {
       case (_, (n, true)) => (Some(n), 0)
       case ((_, c), (n, _)) => (Some(n), c + 1)
     }
@@ -23,7 +23,7 @@ object Throttling extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
     val stream = Stream.constant[IO, Int](1).scan1(_ + _).metered(400.millis)
 
-    throttle(stream, 1.seconds, 2)
+    throttle(stream, 1.seconds, 1)
       .evalMap(e => putStr[IO](e.toString))
       .compile
       .drain
