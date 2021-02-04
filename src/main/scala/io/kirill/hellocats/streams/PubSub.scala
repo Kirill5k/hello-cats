@@ -7,6 +7,8 @@ import cats.syntax.all._
 import fs2.{Pipe, Stream}
 import fs2.concurrent.{SignallingRef, Topic}
 
+import java.time.Instant
+
 sealed trait Event
 case class Text(value: String) extends Event
 case object Quit               extends Event
@@ -19,14 +21,13 @@ final class EventService[F[_]](
     T: Timer[F]
 ) {
 
+  private val eventsStream = Stream
+    .repeatEval(T.clock.realTime(TimeUnit.MILLISECONDS).map(t => Text(Instant.ofEpochMilli(t).toString)))
+    .metered(1.second)
+
   // Publishing 15 text events, then single Quit event, and still publishing text events
   def startPublisher: Stream[F, Unit] = {
-    val textEvents = eventsTopic.publish(
-      Stream
-        .awakeEvery[F](1.second)
-        .zipRight(Stream.eval(T.clock.realTime(TimeUnit.MILLISECONDS).map(t => Text(t.toString))).repeat)
-    )
-
+    val textEvents = eventsTopic.publish(eventsStream)
     val quitEvent = Stream.eval(eventsTopic.publish1(Quit))
 
     (textEvents.take(15) ++ quitEvent ++ textEvents).interruptWhen(interrupter)
