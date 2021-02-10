@@ -20,8 +20,9 @@ object Metered extends IOApp {
     .evalTap(_ => IO.sleep(1.second))
 
   val anotherImmediateStream = Stream
-    .repeatEval(IO(println(LocalTime.now)))
+    .repeatEval(IO(LocalTime.now))
     .zipLeft(Stream.awakeEvery[IO](1.second))
+    .evalTap(t => putStr[IO](s"$t - tapping"))
 
   override def run(args: List[String]): IO[ExitCode] =
    putStr[IO](s"${LocalTime.now()} starting stream") *> anotherImmediateStream.compile.drain.as(ExitCode.Success)
