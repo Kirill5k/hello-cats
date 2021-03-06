@@ -12,7 +12,7 @@ lazy val monocleVersion = "2.0.3"
 lazy val http4sVersion  = "0.21.14"
 
 libraryDependencies ++= Seq(
-  "co.fs2"                       %% "fs2-core"                       % "2.4.4",
+  "co.fs2"                       %% "fs2-core"                       % "2.5.0",
   "org.http4s"                   %% "http4s-core"                    % http4sVersion,
   "org.http4s"                   %% "http4s-dsl"                     % http4sVersion,
   "org.http4s"                   %% "http4s-client"                  % http4sVersion,
@@ -28,7 +28,9 @@ libraryDependencies ++= Seq(
   "com.softwaremill.sttp.client" %% "circe"                          % sttpVersion,
   "com.softwaremill.sttp.client" %% "async-http-client-backend-cats" % sttpVersion,
   "org.scalatest"                %% "scalatest"                      % scalaTestVersion % Test,
-  "com.codecommit"               %% "cats-effect-testing-scalatest"  % "0.4.0"
+  "org.mockito"                  %% "mockito-scala"                  % "1.10.3"         % Test,
+  "org.mockito"                  %% "mockito-scala-scalatest"        % "1.10.3"         % Test,
+  "com.codecommit"               %% "cats-effect-testing-scalatest"  % "0.4.0"          % Test
 )
 
 scalacOptions += "-language:higherKinds"
