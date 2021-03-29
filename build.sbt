@@ -10,6 +10,7 @@ lazy val circeVersion   = "0.12.3"
 lazy val sttpVersion    = "2.0.5"
 lazy val monocleVersion = "2.0.3"
 lazy val http4sVersion  = "0.21.14"
+lazy val mockitoVersion = "1.16.33"
 
 libraryDependencies ++= Seq(
   "co.fs2"                       %% "fs2-core"                       % "2.5.0",
@@ -28,8 +29,8 @@ libraryDependencies ++= Seq(
   "com.softwaremill.sttp.client" %% "circe"                          % sttpVersion,
   "com.softwaremill.sttp.client" %% "async-http-client-backend-cats" % sttpVersion,
   "org.scalatest"                %% "scalatest"                      % scalaTestVersion % Test,
-  "org.mockito"                  %% "mockito-scala"                  % "1.10.3"         % Test,
-  "org.mockito"                  %% "mockito-scala-scalatest"        % "1.10.3"         % Test,
+  "org.mockito"                  %% "mockito-scala"                  % mockitoVersion   % Test,
+  "org.mockito"                  %% "mockito-scala-scalatest"        % mockitoVersion   % Test,
   "com.codecommit"               %% "cats-effect-testing-scalatest"  % "0.4.0"          % Test
 )
 

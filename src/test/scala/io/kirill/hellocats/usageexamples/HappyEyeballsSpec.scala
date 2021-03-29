@@ -1,4 +1,4 @@
-package io.kirill.hellocats.usageexamples.happyeyeballs
+package io.kirill.hellocats.usageexamples
 
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
