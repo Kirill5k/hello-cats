@@ -1,8 +1,9 @@
 package io.kirill.hellocats.streams
 
-import cats.effect.{ConcurrentEffect, ExitCode, IO, IOApp}
+import cats.effect.kernel.
+import cats.effect.std.Queue
+import cats.effect.{Async, ExitCode, IO, IOApp}
 import fs2.Stream
-import fs2.concurrent.Queue
 
 object OnCall extends IOApp {
 
@@ -13,7 +14,7 @@ object OnCall extends IOApp {
     def onError(cb: Throwable => Unit): Unit
   }
 
-  def messageStream[F[_]](consumer: Consumer)(implicit F: ConcurrentEffect[F]): Stream[F, Message] =
+  def messageStream[F[_]](consumer: Consumer)(implicit F: Async[F]): Stream[F, Message] =
     for {
       q <- Stream.eval(Queue.unbounded[F, Either[Throwable, Message]])
       _ <- Stream.eval(F.delay {

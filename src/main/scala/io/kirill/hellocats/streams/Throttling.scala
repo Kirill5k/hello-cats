@@ -1,6 +1,6 @@
 package io.kirill.hellocats.streams
 
-import cats.effect.{ExitCode, IO, IOApp, Sync, Timer}
+import cats.effect._
 import fs2.Stream
 import io.kirill.hellocats.utils.printing._
 
@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 object Throttling extends IOApp {
 
 
-  def throttle[F[_]: Sync: Timer, A](stream: Stream[F, A], time: FiniteDuration, count: Int): Stream[F, A] = {
+  def throttle[F[_]: Sync: Temporal, A](stream: Stream[F, A], time: FiniteDuration, count: Int): Stream[F, A] = {
     val ticks = Stream.every[F](time)
     stream.zip(ticks).scan[(Option[A], Int)]((None, count + 1)) {
       case (_, (n, true)) => (Some(n), 0)

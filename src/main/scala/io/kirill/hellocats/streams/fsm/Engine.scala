@@ -6,7 +6,9 @@ import cats.implicits._
 import fs2.Pipe
 import io.kirill.hellocats.streams.fsm.game._
 
-final case class Engine[F[_]: Concurrent: Parallel: Time: Timer](
+import java.time.Instant
+
+final case class Engine[F[_]: Async: Parallel](
     publish: Summary => F[Unit],
     ticker: Ticker[F]
 ) {
@@ -17,9 +19,9 @@ final case class Engine[F[_]: Concurrent: Parallel: Time: Timer](
       .mapAccumulate(Map.empty[PlayerId, Agg])(Engine.fsm.run)
       .collect { case (_, (outputState, Tick.On)) => outputState }
       .evalMap { state =>
-        Time[F].now.flatMap { ts =>
+        Clock[F].monotonic.flatMap { ts =>
           state.toList.parTraverse_ { case (pid, agg) =>
-            publish(agg.summary(pid, ts))
+            publish(agg.summary(pid, Instant.ofEpochMilli(ts.toMillis)))
           }
         }
       }

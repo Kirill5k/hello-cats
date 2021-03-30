@@ -1,6 +1,8 @@
 package io.kirill.hellocats.streams
 
-import cats.effect.{Concurrent, ExitCode, IO, IOApp, Sync, Timer}
+import cats.effect.kernel.Async
+import cats.effect.std.Queue
+import cats.effect.{Concurrent, ExitCode, IO, IOApp, Sync, Temporal, Timer}
 import cats.implicits._
 import fs2.Stream
 import fs2.concurrent.Queue
@@ -25,12 +27,12 @@ object Aggregator extends IOApp {
 
   val providers: List[String] = List("p1", "p2", "p3", "p4")
 
-  def queryProvider[F[_]: Sync: Timer](providerName: String, query: Query): F[Option[Quote]] =
+  def queryProvider[F[_]: Async](providerName: String, query: Query): F[Option[Quote]] =
     log[F](s"querying provider $providerName - $query") *>
-      Timer[F].sleep((rand.nextDouble() * 10000).millis) *>
+      Temporal[F].sleep((rand.nextDouble() * 10000).millis) *>
       Sync[F].delay(Some(Quote(providerName, BigDecimal(rand.nextDouble() * 100))))
 
-  def queryProviders[F[_]: Concurrent: Timer](query: Query): Stream[F, Quote] =
+  def queryProviders[F[_]: Async](query: Query): Stream[F, Quote] =
     Stream
       .emits(providers)
       .map(p => Stream.eval(queryProvider[F](p, query)))

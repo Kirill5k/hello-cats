@@ -1,17 +1,17 @@
 package io.kirill.hellocats.streams
 
-import cats.effect.concurrent.MVar
-import cats.effect.{Concurrent, Timer}
+import cats.effect.std.Queue
+import cats.effect.{Async, Concurrent, Temporal}
 import cats.implicits._
 import fs2.{Pipe, Stream}
-import fs2.concurrent.{Queue, SignallingRef}
+import fs2.concurrent.SignallingRef
 import io.kirill.hellocats.utils.printing._
 
 import scala.concurrent.duration._
 
 object FlowControl {
 
-  def stopAfter[F[_]: Concurrent: Timer, A](in: Stream[F, A], delay: FiniteDuration): Stream[F, A] = {
+  def stopAfter[F[_]: Temporal, A](in: Stream[F, A], delay: FiniteDuration): Stream[F, A] = {
     def out(interrupter: SignallingRef[F, Boolean]): Stream[F, A] =
       in.interruptWhen(interrupter)
 
@@ -23,7 +23,7 @@ object FlowControl {
     }
   }
 
-  def stopAfterPipe[F[_]: Concurrent: Timer, A](delay: FiniteDuration): Pipe[F, A, A] = in => {
+  def stopAfterPipe[F[_]: Temporal, A](delay: FiniteDuration): Pipe[F, A, A] = in => {
     def close(interrupter: SignallingRef[F, Boolean]): Stream[F, Unit] =
       Stream.sleep_[F](delay) ++ Stream.eval(interrupter.set(true))
 
@@ -39,8 +39,8 @@ object FlowControl {
    * )
    * clientMessages.zipLeft(slowDown)
    */
-  def slowDownEveryN[F[_]: Timer](resets: Stream[F, Unit], n: Int)(implicit F: Concurrent[F]): Stream[F, FiniteDuration] = {
-    val slowingDown       = Stream.eval_(putStr("----- Slowing down -----"))
+  def slowDownEveryN[F[_]](resets: Stream[F, Unit], n: Int)(implicit F: Async[F]): Stream[F, FiniteDuration] = {
+    val slowingDown       = Stream.eval(putStr("----- Slowing down -----")).drain
     val resetting         = putStr("----- Resetting delays! -----")
     val delaysExponential = Stream.iterate(1.milli)(_ * 2).flatMap(Stream.awakeDelay[F](_).take(n.toLong) ++ slowingDown)
 

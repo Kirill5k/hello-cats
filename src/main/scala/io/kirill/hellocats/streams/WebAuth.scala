@@ -1,7 +1,7 @@
 package io.kirill.hellocats.streams
 
 import java.util.UUID
-import cats.effect.{IO, IOApp, Sync, Temporal}
+import cats.effect.{Async, IO, IOApp, Sync, Temporal}
 import cats.implicits._
 import fs2.Stream
 import fs2.concurrent.SignallingRef
@@ -20,13 +20,13 @@ object WebAuth extends IOApp.Simple {
       nextPage: Option[Int]
   )
 
-  def authenticate[F[_]: Sync: Temporal]: F[AuthToken] = {
+  def authenticate[F[_]: Async]: F[AuthToken] = {
     log[F]("authenticating") *>
       Temporal[F].sleep(200.millis) *>
       Sync[F].delay(AuthToken(UUID.randomUUID().toString, 5000))
   }
 
-  def authStream[F[_]: Sync](authToken: SignallingRef[F, AuthToken]): Stream[F, Unit] =
+  def authStream[F[_]: Async](authToken: SignallingRef[F, AuthToken]): Stream[F, Unit] =
     Stream
       .eval(authToken.get)
       .flatMap { t =>
@@ -35,7 +35,7 @@ object WebAuth extends IOApp.Simple {
           .metered(t.expiresIn.millis)
       }
 
-  def getItem[F[_]: Sync: Temporal](token: String, page: Int): F[ItemsResponse] =
+  def getItem[F[_]: Async](token: String, page: Int): F[ItemsResponse] =
     log(s"getting item from page $page with token $token") *>
       Temporal[F].sleep(1000.millis) *>
       Sync[F].delay(
@@ -46,7 +46,7 @@ object WebAuth extends IOApp.Simple {
         )
       )
 
-  def itemStream[F[_]: Sync: Temporal](authToken: SignallingRef[F, AuthToken]): Stream[F, Item] =
+  def itemStream[F[_]: Async](authToken: SignallingRef[F, AuthToken]): Stream[F, Item] =
     Stream
       .unfoldLoopEval[F, Int, List[Item]](0) { page =>
         authToken.get.flatMap(t => getItem(t.token, page).map(r => (r.items, r.nextPage)))
