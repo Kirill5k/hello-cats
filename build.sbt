@@ -2,9 +2,9 @@ name := "hello-cats"
 
 version := "0.1"
 
-scalaVersion := "2.13.3"
+scalaVersion := "2.13.5"
 
-lazy val scalaTestVersion = "3.2.0"
+lazy val scalaTestVersion = "3.2.6"
 
 lazy val circeVersion   = "0.12.3"
 lazy val sttpVersion    = "2.0.5"
@@ -13,7 +13,7 @@ lazy val http4sVersion  = "0.21.14"
 lazy val mockitoVersion = "1.16.33"
 
 libraryDependencies ++= Seq(
-  "co.fs2"                       %% "fs2-core"                       % "2.5.0",
+  "co.fs2"                       %% "fs2-core"                       % "3.0.0",
   "org.http4s"                   %% "http4s-core"                    % http4sVersion,
   "org.http4s"                   %% "http4s-dsl"                     % http4sVersion,
   "org.http4s"                   %% "http4s-client"                  % http4sVersion,
@@ -31,7 +31,7 @@ libraryDependencies ++= Seq(
   "org.scalatest"                %% "scalatest"                      % scalaTestVersion % Test,
   "org.mockito"                  %% "mockito-scala"                  % mockitoVersion   % Test,
   "org.mockito"                  %% "mockito-scala-scalatest"        % mockitoVersion   % Test,
-  "com.codecommit"               %% "cats-effect-testing-scalatest"  % "0.4.0"          % Test
+  "org.typelevel"                %% "cats-effect-testing-scalatest"  % "1.0.0"          % Test
 )
 
 scalacOptions += "-language:higherKinds"

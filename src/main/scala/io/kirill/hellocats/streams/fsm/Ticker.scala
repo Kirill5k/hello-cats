@@ -3,7 +3,6 @@ package io.kirill.hellocats.streams.fsm
 import scala.concurrent.duration._
 import cats._
 import cats.effect._
-import cats.effect.concurrent.Ref
 import cats.implicits._
 import fs2.Stream
 
@@ -27,7 +26,7 @@ object Ticker {
           val interval = (duration * 0.05).toLong
 
           Stream.unfoldLoopEval[F, (Long, Long), Tick]((0, 0)) { case (lastSpikeNanos, eventsCount) =>
-            (Clock[F].monotonic(NANOSECONDS), get).tupled.map { case (now, tick) =>
+            (Clock[F].monotonic.map(_.toMillis), get).tupled.map { case (now, tick) =>
               if ((now - lastSpikeNanos) > duration || (tick === Tick.On && (now - lastSpikeNanos) > interval) || eventsCount >= maxNrOfEvents)
                 (Tick.On, Some(now, 0))
               else (Tick.Off, Some(lastSpikeNanos, eventsCount+1))

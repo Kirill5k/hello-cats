@@ -1,6 +1,6 @@
 package io.kirill.hellocats.streams
 
-import cats.effect.concurrent.Ref
+import cats.effect.kernel.Ref
 import cats.effect.{ExitCode, IO, IOApp, Resource, Sync}
 import cats.implicits._
 import fs2.Stream

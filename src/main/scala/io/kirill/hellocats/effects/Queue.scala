@@ -20,7 +20,7 @@ final private class UnboundedQueue[F[_]: Concurrent, A](
       case (els, waits) if waits.isEmpty =>
         ((els :+ e, waits), ().pure[F])
       case (els, w +: waits) =>
-        ((els, waits), w.complete(e))
+        ((els, waits), w.complete(e).void)
     }.flatten
   }
 

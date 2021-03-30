@@ -1,7 +1,7 @@
 package io.kirill.hellocats.streams
 
 import java.util.UUID
-import cats.effect.{ExitCode, IO, IOApp, Sync, Timer}
+import cats.effect.{IO, IOApp, Sync, Temporal}
 import cats.implicits._
 import fs2.Stream
 import fs2.concurrent.SignallingRef
@@ -9,7 +9,7 @@ import io.kirill.hellocats.utils.printing._
 
 import scala.concurrent.duration._
 
-object WebAuth extends IOApp {
+object WebAuth extends IOApp.Simple {
 
   final case class AuthToken(token: String, expiresIn: Long)
 
@@ -20,23 +20,24 @@ object WebAuth extends IOApp {
       nextPage: Option[Int]
   )
 
-  def authenticate[F[_]: Sync: Timer]: F[AuthToken] =
-    log("authenticating") *>
-      Timer[F].sleep(200.millis) *>
+  def authenticate[F[_]: Sync: Temporal]: F[AuthToken] = {
+    log[F]("authenticating") *>
+      Temporal[F].sleep(200.millis) *>
       Sync[F].delay(AuthToken(UUID.randomUUID().toString, 5000))
+  }
 
-  def authStream[F[_]: Sync: Timer](authToken: SignallingRef[F, AuthToken]): Stream[F, Unit] =
+  def authStream[F[_]: Sync](authToken: SignallingRef[F, AuthToken]): Stream[F, Unit] =
     Stream
       .eval(authToken.get)
       .flatMap { t =>
         Stream
-          .repeatEval(authenticate.flatMap(authToken.set))
+          .repeatEval(authenticate[F].flatMap(authToken.set))
           .metered(t.expiresIn.millis)
       }
 
-  def getItem[F[_]: Sync: Timer](token: String, page: Int): F[ItemsResponse] =
+  def getItem[F[_]: Sync: Temporal](token: String, page: Int): F[ItemsResponse] =
     log(s"getting item from page $page with token $token") *>
-      Timer[F].sleep(1000.millis) *>
+      Temporal[F].sleep(1000.millis) *>
       Sync[F].delay(
         ItemsResponse(
           List(Item(UUID.randomUUID().toString)),
@@ -45,14 +46,14 @@ object WebAuth extends IOApp {
         )
       )
 
-  def itemStream[F[_]: Sync: Timer](authToken: SignallingRef[F, AuthToken]): Stream[F, Item] =
+  def itemStream[F[_]: Sync: Temporal](authToken: SignallingRef[F, AuthToken]): Stream[F, Item] =
     Stream
       .unfoldLoopEval[F, Int, List[Item]](0) { page =>
         authToken.get.flatMap(t => getItem(t.token, page).map(r => (r.items, r.nextPage)))
       }
       .flatMap(Stream.emits)
 
-  override def run(args: List[String]): IO[ExitCode] =
+  override val run: IO[Unit] =
     Stream
       .eval(authenticate[IO].flatMap(SignallingRef[IO, AuthToken]))
       .flatMap { token =>
@@ -60,5 +61,4 @@ object WebAuth extends IOApp {
       }
       .compile
       .drain
-      .as(ExitCode.Success)
 }

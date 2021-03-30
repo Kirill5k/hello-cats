@@ -1,9 +1,7 @@
 package io.kirill.hellocats.usageexamples
 
-import cats.effect.{Concurrent, Timer}
+import cats.effect.Temporal
 import cats.implicits._
-import io.kirill.hellocats.typeclasses.Number
-import org.log4s.Logger
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -12,10 +10,11 @@ trait Background[F[_]] {
 }
 
 object Background {
-  implicit def concurrentBackground[F[_]: Concurrent: Timer] =
+  implicit def concurrentBackground[F[_]: Temporal]: Background[F] =
     new Background[F] {
-      override def schedule[A](fa: F[A], duration: FiniteDuration): F[Unit] =
-        Concurrent[F].start(Timer[F].sleep(duration) *> fa).void
+      override def schedule[A](fa: F[A], duration: FiniteDuration): F[Unit] = {
+        Temporal[F].start(Temporal[F].sleep(duration) *> fa).void
+      }
     }
 
   def apply[F[_]](implicit ev: Background[F]): Background[F] = ev

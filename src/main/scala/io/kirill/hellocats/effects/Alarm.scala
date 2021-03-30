@@ -1,8 +1,8 @@
 package io.kirill.hellocats.effects
 
 import cats.effect.implicits._
-import cats.effect.concurrent.{Deferred, Ref}
-import cats.effect.{Concurrent, Fiber, Timer}
+import cats.effect.kernel.Deferred
+import cats.effect.{Concurrent, Fiber, Ref, Temporal}
 import cats.implicits._
 
 import scala.concurrent.duration._
@@ -29,19 +29,19 @@ trait Alarm[F[_]] {
   def cancel: F[Unit]
 }
 object Alarm {
-  def create[F[_]](implicit F: Concurrent[F], timer: Timer[F]): F[Alarm[F]] =
+  def create[F[_]](implicit F: Temporal[F]): F[Alarm[F]] =
     for {
-      empty <- Deferred[F, Fiber[F, Unit]]
+      empty <- Deferred[F, Fiber[F, Throwable, Unit]]
       state <- Ref[F].of(empty)
       fb <- F.never[Unit].start
       _ <- empty.complete(fb)
     } yield new Alarm[F] {
 
       def reset(d: FiniteDuration): F[Unit] = for {
-        newFiber <- Deferred[F, Fiber[F, Unit]]
+        newFiber <- Deferred[F, Fiber[F, Throwable, Unit]]
         oldFiber <- state.getAndSet(newFiber)
         _ <- oldFiber.get.flatMap(_.cancel)
-        fiber <- timer.sleep(d).start
+        fiber <- F.sleep(d).start
         _ <- newFiber.complete(fiber)
       } yield ()
 

@@ -1,7 +1,6 @@
 package io.kirill.hellocats.usageexamples
 
-import cats.effect.Sync
-import cats.effect.concurrent.Ref
+import cats.effect.{Ref, Sync}
 import cats.implicits._
 
 trait Counter[F[_]] {

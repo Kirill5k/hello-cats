@@ -1,8 +1,7 @@
 package io.kirill.hellocats.effects
 
 import cats.Monad
-import cats.effect.Concurrent
-import cats.effect.concurrent.{Deferred, Ref}
+import cats.effect.{Concurrent, Deferred, Ref}
 import cats.implicits._
 
 trait CountdownLatch[F[_]] {
@@ -22,14 +21,12 @@ final private class RefbasedCountdownLatch[F[_]](
 
   override def decrement(): F[Unit] =
     counts.updateAndGet(_ - 1).flatMap { currentCount =>
-      if (currentCount == 0) latch.complete(()) else F.unit
+      if (currentCount == 0) latch.complete(()).void else F.unit
     }
 }
 
 object CountdownLatch {
   def make[F[_]: Concurrent](count: Int): F[CountdownLatch[F]] =
-    for {
-      count <- Ref.of[F, Int](count)
-      latch <- Deferred[F, Unit]
-    } yield new RefbasedCountdownLatch[F](count, latch)
+    (Ref.of[F, Int](count), Deferred[F, Unit])
+      .mapN((count, latch) => new RefbasedCountdownLatch[F](count, latch))
 }
