@@ -3,8 +3,8 @@ package io.kirill.hellocats.streams
 import cats.effect.std.Queue
 import cats.effect.{Async, Concurrent, Temporal}
 import cats.implicits._
-import fs2.{Pipe, Stream}
 import fs2.concurrent.SignallingRef
+import fs2.{Pipe, Stream}
 import io.kirill.hellocats.utils.printing._
 
 import scala.concurrent.duration._
@@ -44,10 +44,10 @@ object FlowControl {
     val resetting         = putStr("----- Resetting delays! -----")
     val delaysExponential = Stream.iterate(1.milli)(_ * 2).flatMap(Stream.awakeDelay[F](_).take(n.toLong) ++ slowingDown)
 
-    Stream.eval(MVar.empty[F, Unit]).flatMap { restart =>
+    Stream.eval(Queue.unbounded[F, Unit]).flatMap { restart =>
       val delaysUntilReset = delaysExponential.interruptWhen(restart.take.attempt)
 
-      delaysUntilReset.repeat.concurrently(resets.evalMap(_ => restart.put(()) *> resetting))
+      delaysUntilReset.repeat.concurrently(resets.evalMap(_ => restart.offer(()) *> resetting))
     }
   }
 
@@ -61,7 +61,7 @@ object FlowControl {
           case (e, i) =>
             val n = i % nShards
             val q = queues(n)
-            Stream.eval(q.enqueue1(e)).concurrently(q.dequeue.evalMap(effect(n)))
+            Stream.eval(q.offer(e)).concurrently(Stream.fromQueueUnterminated(q).evalMap(effect(n)))
         }
       }
 

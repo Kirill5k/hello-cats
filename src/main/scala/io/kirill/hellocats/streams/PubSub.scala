@@ -1,15 +1,12 @@
 package io.kirill.hellocats.streams
 
-import scala.concurrent.duration._
-import cats.implicits._
-
-import java.util.concurrent.TimeUnit
-import cats.effect.{Async, ExitCode, IO, IOApp, Sync, Temporal}
+import cats.effect.{Async, ExitCode, IO, IOApp}
 import cats.syntax.all._
-import fs2.{Pipe, Stream}
 import fs2.concurrent.{SignallingRef, Topic}
+import fs2.{Pipe, Stream}
 
 import java.time.Instant
+import scala.concurrent.duration._
 
 sealed trait Event
 case class Text(value: String) extends Event

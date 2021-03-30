@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 object Throttling extends IOApp {
 
 
-  def throttle[F[_]: Sync: Temporal, A](stream: Stream[F, A], time: FiniteDuration, count: Int): Stream[F, A] = {
+  def throttle[F[_]: Async, A](stream: Stream[F, A], time: FiniteDuration, count: Int): Stream[F, A] = {
     val ticks = Stream.every[F](time)
     stream.zip(ticks).scan[(Option[A], Int)]((None, count + 1)) {
       case (_, (n, true)) => (Some(n), 0)

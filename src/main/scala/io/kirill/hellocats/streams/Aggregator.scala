@@ -2,16 +2,15 @@ package io.kirill.hellocats.streams
 
 import cats.effect.kernel.Async
 import cats.effect.std.Queue
-import cats.effect.{Concurrent, ExitCode, IO, IOApp, Sync, Temporal, Timer}
+import cats.effect._
 import cats.implicits._
 import fs2.Stream
-import fs2.concurrent.Queue
 import io.kirill.hellocats.utils.printing._
 
-import scala.util.Random
 import scala.concurrent.duration._
+import scala.util.Random
 
-object Aggregator extends IOApp {
+object Aggregator extends IOApp.Simple {
 
   val rand = Random
 
@@ -39,18 +38,18 @@ object Aggregator extends IOApp {
       .parJoinUnbounded
       .unNone
 
-  override def run(args: List[String]): IO[ExitCode] =
+  override def run: IO[Unit] =
     for {
-      quotes <- Queue.noneTerminated[IO, Quote]
+      quotes <- Queue.unbounded[IO, Option[Quote]]
       _ <- Stream
-        .bracket(IO.pure(quotes))(_.enqueue1(None))
-        .flatMap(q => queryProviders[IO](Query("Foo", "Bar")).evalMap(quote => q.enqueue1(Some(quote))))
+        .bracket(IO.pure(quotes))(_.offer(None))
+        .flatMap(q => queryProviders[IO](Query("Foo", "Bar")).evalMap(quote => q.offer(Some(quote))))
         .compile
         .drain
         .start
-      _ <- quotes.dequeue
+      _ <- Stream.fromQueueNoneTerminated(quotes)
         .evalTap(quote => log[IO](s"received quote from provider ${quote.providerName}"))
         .compile
         .drain
-    } yield ExitCode.Success
+    } yield ()
 }
