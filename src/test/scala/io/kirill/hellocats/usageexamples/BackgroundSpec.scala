@@ -28,4 +28,18 @@ class BackgroundSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
         .map(_ mustBe List("hello", "world", "!"))
     }
   }
+
+  "handle errors and continue the process" in {
+    Background
+      .resource[IO]
+      .use { bg =>
+        for {
+          queue  <- Queue.unbounded[IO, String]
+          _      <- bg.schedule(IO.raiseError(new RuntimeException("uh oh")), 1.seconds)
+          _      <- bg.schedule(queue.offer("still going"), 2.seconds)
+          result <- Stream.fromQueueUnterminated(queue).take(1).compile.toList
+        } yield result
+      }
+      .map(_ mustBe List("still going"))
+  }
 }
