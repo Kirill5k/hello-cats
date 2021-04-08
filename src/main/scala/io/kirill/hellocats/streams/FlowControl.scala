@@ -18,18 +18,18 @@ object FlowControl {
     def stop(interrupter: SignallingRef[F, Boolean]): Stream[F, Unit] =
       Stream.sleep_[F](delay) ++ Stream.eval(interrupter.set(true))
 
-    Stream.eval(SignallingRef[F, Boolean](false)).flatMap { interrupter =>
-      out(interrupter).concurrently(stop(interrupter))
-    }
+    Stream
+      .eval(SignallingRef[F, Boolean](false))
+      .flatMap { interrupter => out(interrupter).concurrently(stop(interrupter)) }
   }
 
   def stopAfterPipe[F[_]: Temporal, A](delay: FiniteDuration): Pipe[F, A, A] = in => {
     def close(interrupter: SignallingRef[F, Boolean]): Stream[F, Unit] =
       Stream.sleep_[F](delay) ++ Stream.eval(interrupter.set(true))
 
-    Stream.eval(SignallingRef[F, Boolean](false)).flatMap { interrupter =>
-      in.interruptWhen(interrupter).concurrently(close(interrupter))
-    }
+    Stream
+      .eval(SignallingRef[F, Boolean](false))
+      .flatMap { interrupter => in.interruptWhen(interrupter).concurrently(close(interrupter)) }
   }
 
   /**
@@ -51,7 +51,7 @@ object FlowControl {
     }
   }
 
-  def sharded[F[_], A](nShards: Int, effect: Int => A => F[Unit])(source: Stream[F, A])(implicit F: Concurrent[F]): Stream[F, Unit] =
+  def sharded[F[_]: Concurrent, A](nShards: Int, effect: Int => A => F[Unit])(source: Stream[F, A]): Stream[F, Unit] =
     Stream
       .eval(Queue.bounded[F, A](100))
       .replicateA(nShards)
@@ -65,4 +65,23 @@ object FlowControl {
         }
       }
 
+  def withPause[F[_]: Async]: Stream[F, Unit] =
+    Stream
+      .eval(SignallingRef[F, Boolean](false))
+      .flatMap { signal =>
+        val src = Stream
+          .emit[F, String]("ping")
+          .repeat
+          .metered(1.second)
+          .evalTap(log[F])
+          .pauseWhen(signal)
+
+        val pause = Stream.eval(log[F](">> pausing stream <<") *> signal.set(true)).delayBy(3.seconds)
+        val resume = Stream.eval(log[F](">> resuming stream <<") *> signal.set(false)).delayBy(7.seconds)
+
+        Stream(src, pause, resume).parJoinUnbounded
+      }
+      .interruptAfter(10.seconds)
+      .onComplete(Stream.eval(log[F]("pong")))
+      .drain
 }
