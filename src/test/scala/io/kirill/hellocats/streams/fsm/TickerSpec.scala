@@ -18,7 +18,7 @@ class TickerSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
       } yield ticks
 
       res.asserting { ticks =>
-        ticks.filter(_ == Tick.On) must have size 3
+        ticks.filter(_ == Tick.On) must have size 4
       }
     }
 
@@ -29,7 +29,7 @@ class TickerSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers {
       } yield ticks
 
       res.asserting { ticks =>
-        ticks.filter(_ == Tick.On) must have size 90
+        ticks.filter(_ == Tick.On) must have size 91
       }
     }
   }

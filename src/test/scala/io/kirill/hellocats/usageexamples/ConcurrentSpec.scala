@@ -1,14 +1,9 @@
 package io.kirill.hellocats.usageexamples
 
+import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import cats.effect.{IO, Timer}
-import cats.implicits._
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.must.Matchers
-import sttp.client.Response
-import sttp.client.asynchttpclient.cats.AsyncHttpClientCatsBackend
-import sttp.client.testing.SttpBackendStub
-import sttp.model.Method
 
 import scala.concurrent.duration._
 import scala.language.postfixOps

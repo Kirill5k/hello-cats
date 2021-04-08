@@ -1,7 +1,6 @@
 package io.kirill.hellocats.effects
 
 import cats.effect._
-import cats.effect.concurrent.{Deferred, Ref}
 import cats.implicits._
 
 /** unbounded queue, `dequeue` semantically blocks on empty queue
