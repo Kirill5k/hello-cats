@@ -11,9 +11,11 @@ lazy val sttpVersion    = "2.0.5"
 lazy val monocleVersion = "2.0.3"
 lazy val http4sVersion  = "0.21.14"
 lazy val mockitoVersion = "1.16.33"
+lazy val fs2Version     = "3.0.1"
 
 libraryDependencies ++= Seq(
-  "co.fs2"                       %% "fs2-core"                       % "3.0.1",
+  "co.fs2"                       %% "fs2-core"                       % fs2Version,
+  "co.fs2"                       %% "fs2-io"                         % fs2Version,
   "org.http4s"                   %% "http4s-core"                    % http4sVersion,
   "org.http4s"                   %% "http4s-dsl"                     % http4sVersion,
   "org.http4s"                   %% "http4s-client"                  % http4sVersion,
