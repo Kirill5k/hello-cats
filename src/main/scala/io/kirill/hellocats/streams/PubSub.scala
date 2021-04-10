@@ -51,7 +51,7 @@ final class EventService[F[_]](
   }
 }
 
-object PubSub extends IOApp {
+object PubSub extends IOApp.Simple {
 
   val program = for {
     topic  <- Stream.eval(Topic[IO, Event]).evalTap(_.publish1(Text("Initial Event")))
@@ -60,6 +60,5 @@ object PubSub extends IOApp {
     _ <- service.startPublisher.concurrently(service.startSubscribers)
   } yield ()
 
-  override def run(args: List[String]): IO[ExitCode] =
-    program.compile.drain.as(ExitCode.Success)
+  val run: IO[Unit] = program.compile.drain
 }
