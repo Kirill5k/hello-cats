@@ -37,18 +37,22 @@ object Grouping {
             for {
               queues <- queuesRef.get
               res <- queues.get(k) match {
-                case Some(q) => q.offer(Some(v)).as(none[(K, Stream[F, A])])
-                case None => Queue
-                  .unbounded[F, Option[A]]
-                  .flatTap(_.offer(Some(v)))
-                  .flatTap(q => queuesRef.update(_ + (k -> q)))
-                  .map(q => (k -> Stream.fromQueueNoneTerminated(q)).some)
+                case Some(queue) =>
+                  queue
+                    .offer(Some(v))
+                    .as(none[(K, Stream[F, A])])
+                case None =>
+                  Queue
+                    .unbounded[F, Option[A]]
+                    .flatTap(_.offer(Some(v)))
+                    .flatTap(q => queuesRef.update(_ + (k -> q)))
+                    .map(q => (k -> Stream.fromQueueNoneTerminated(q)).some)
               }
             } yield res
           }
           .unNone
           .onFinalize(cleanup)
-    }
+      }
   }
 
   implicit final class StreamOps[F[_]: Concurrent, A](private val stream: Stream[F, A]) {
