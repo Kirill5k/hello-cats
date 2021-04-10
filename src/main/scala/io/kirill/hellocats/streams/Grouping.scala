@@ -50,4 +50,9 @@ object Grouping {
           .onFinalize(cleanup)
     }
   }
+
+  implicit final class StreamOps[F[_]: Concurrent, A](private val stream: Stream[F, A]) {
+    def groupBy[K](selector: A => F[K]): Stream[F, (K, Stream[F, A])] =
+      stream.through(Grouping.groupBy(selector))
+  }
 }
