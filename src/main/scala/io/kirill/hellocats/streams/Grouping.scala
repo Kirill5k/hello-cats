@@ -26,26 +26,28 @@ object Grouping {
   )(implicit
       F: Concurrent[F]
   ): Pipe[F, A, (K, Stream[F, A])] = { in =>
-    Stream.eval(Ref.of[F, Map[K, Queue[F, Option[A]]]](Map.empty)).flatMap { queueMap =>
-      val cleanup = queueMap.get.flatMap(_.values.toList.traverse_(_.offer(None)))
+    Stream
+      .eval(Ref.of[F, Map[K, Queue[F, Option[A]]]](Map.empty))
+      .flatMap { queuesRef =>
+        val cleanup = queuesRef.get.flatMap(_.values.toList.traverse_(_.offer(None)))
 
-      (in ++ Stream.eval(cleanup).drain)
-        .evalMap { elem =>
-          (selector(elem), queueMap.get).mapN { (key, queues) =>
-            queues
-              .get(key)
-              .fold {
-                for {
-                  newQ <- Queue.unbounded[F, Option[A]] // Create a new queue
-                  _    <- queueMap.modify(queues => (queues + (key -> newQ), queues))
-                  // Enqueue the element lifted into an Option to the new queue
-                  _ <- newQ.offer(elem.some)
-                } yield (key -> Stream.fromQueueNoneTerminated(newQ)).some
-              }(_.offer(elem.some).as(None))
-          }.flatten
-        }
-        .unNone
-        .onFinalize(cleanup)
+        in
+          .evalMap(v => selector(v).map(k => (k, v)))
+          .evalMap { case (k, v) =>
+            for {
+              queues <- queuesRef.get
+              res <- queues.get(k) match {
+                case Some(q) => q.offer(Some(v)).as(none[(K, Stream[F, A])])
+                case None => Queue
+                  .unbounded[F, Option[A]]
+                  .flatTap(_.offer(Some(v)))
+                  .flatTap(q => queuesRef.update(_ + (k -> q)))
+                  .map(q => (k -> Stream.fromQueueNoneTerminated(q)).some)
+              }
+            } yield res
+          }
+          .unNone
+          .onFinalize(cleanup)
     }
   }
 }
