@@ -14,6 +14,7 @@ lazy val mockitoVersion = "1.16.33"
 lazy val fs2Version     = "3.0.1"
 
 libraryDependencies ++= Seq(
+  compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
   "co.fs2"                       %% "fs2-core"                       % fs2Version,
   "co.fs2"                       %% "fs2-io"                         % fs2Version,
   "org.http4s"                   %% "http4s-core"                    % http4sVersion,
