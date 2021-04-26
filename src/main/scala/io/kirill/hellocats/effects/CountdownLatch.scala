@@ -1,6 +1,6 @@
 package io.kirill.hellocats.effects
 
-import cats.{Monad, MonadError}
+import cats.MonadError
 import cats.effect.{Concurrent, Deferred, Ref}
 import cats.implicits._
 
