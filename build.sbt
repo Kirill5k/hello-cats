@@ -4,14 +4,13 @@ version := "0.1"
 
 scalaVersion := "2.13.5"
 
-lazy val scalaTestVersion = "3.2.7"
-
-lazy val circeVersion   = "0.12.3"
-lazy val sttpVersion    = "3.3.1"
+lazy val circeVersion   = "0.13.0"
+lazy val sttpVersion    = "3.3.3"
 lazy val monocleVersion = "2.0.3"
 lazy val http4sVersion  = "0.21.14"
+lazy val fs2Version     = "3.0.3"
 lazy val mockitoVersion = "1.16.33"
-lazy val fs2Version     = "3.0.1"
+lazy val scalaTestVersion = "3.2.9"
 
 libraryDependencies ++= Seq(
   compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
