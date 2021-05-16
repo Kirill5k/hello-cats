@@ -4,11 +4,9 @@ version := "0.1"
 
 scalaVersion := "2.13.5"
 
-lazy val circeVersion   = "0.13.0"
 lazy val sttpVersion    = "3.3.3"
-lazy val monocleVersion = "2.0.3"
-lazy val http4sVersion  = "0.21.14"
 lazy val fs2Version     = "3.0.3"
+lazy val monocleVersion = "2.0.3"
 lazy val mockitoVersion = "1.16.33"
 lazy val scalaTestVersion = "3.2.9"
 
@@ -16,15 +14,6 @@ libraryDependencies ++= Seq(
   compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full),
   "co.fs2"                        %% "fs2-core"                       % fs2Version,
   "co.fs2"                        %% "fs2-io"                         % fs2Version,
-  "org.http4s"                    %% "http4s-core"                    % http4sVersion,
-  "org.http4s"                    %% "http4s-dsl"                     % http4sVersion,
-  "org.http4s"                    %% "http4s-client"                  % http4sVersion,
-  "org.http4s"                    %% "http4s-server"                  % http4sVersion,
-  "org.http4s"                    %% "http4s-blaze-server"            % http4sVersion,
-  "org.http4s"                    %% "http4s-circe"                   % http4sVersion,
-  "io.circe"                      %% "circe-core"                     % circeVersion,
-  "io.circe"                      %% "circe-generic"                  % circeVersion,
-  "io.circe"                      %% "circe-parser"                   % circeVersion,
   "com.github.julien-truffaut"    %% "monocle-core"                   % monocleVersion,
   "com.github.julien-truffaut"    %% "monocle-macro"                  % monocleVersion,
   "com.softwaremill.sttp.client3" %% "core"                           % sttpVersion,
