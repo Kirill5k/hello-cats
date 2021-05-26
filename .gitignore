@@ -93,6 +93,7 @@ project/plugins/project/
 .cache
 .lib/
 null/
+.bsp/
 
 ### Scala ###
 
