@@ -1,6 +1,6 @@
 package io.kirill.hellocats.effects
 
-import cats.MonadError
+import cats.Monad
 import cats.effect.{Concurrent, Deferred, Ref}
 import cats.implicits._
 
@@ -9,7 +9,7 @@ trait CountdownLatch[F[_]] {
   def decrement(): F[Unit]
 }
 
-final private class RefbasedCountdownLatch[F[_]: MonadError[*[_], Throwable]](
+final private class RefbasedCountdownLatch[F[_]: Monad](
     private val counts: Ref[F, Int],
     private val latch: Deferred[F, Unit]
 ) extends CountdownLatch[F] {
