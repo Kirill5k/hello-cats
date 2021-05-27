@@ -6,7 +6,7 @@ import cats.effect.{ExitCode, IO, IOApp}
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
-object SinglePool extends IOApp {
+object SinglePool extends IOApp.Simple {
 
   val ec: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
 
@@ -22,9 +22,9 @@ object SinglePool extends IOApp {
       result <- loop(id)(i + 1)
     } yield result
 
-  override def run(args: List[String]): IO[ExitCode] =
+  override val run: IO[Unit] =
     for {
       _ <- loop("A")(0).startOn(ec)
       _ <- loop("B")(0).startOn(ec)
-    } yield ExitCode.Success
+    } yield ()
 }

@@ -7,7 +7,7 @@ import cats.effect.{ExitCode, IO, IOApp}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
-object MultiplesECs extends IOApp {
+object MultiplesECs extends IOApp.Simple {
 
   val ec1 = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
   val ec2 = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(1))
@@ -18,9 +18,9 @@ object MultiplesECs extends IOApp {
     result <- loop(id)(i + 1)
   } yield result
 
-  override def run(args: List[String]): IO[ExitCode] =
+  override val run: IO[Unit] =
     for {
       _ <- loop("A")(0).startOn(ec1)
       _ <- loop("B")(0).startOn(ec2)
-    } yield ExitCode.Success
+    } yield ()
 }
